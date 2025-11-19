@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import './EventForm.css';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const EventForm = ({ onEventCreate }) => {
   const [formData, setFormData] = useState({
@@ -18,31 +20,42 @@ const EventForm = ({ onEventCreate }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Create event object with a unique ID
-    const newEvent = {
-      id: Date.now().toString(),
-      ...formData,
-      createdAt: new Date().toISOString()
-    };
+    try {
+      // Create event object for Firebase
+      const newEvent = {
+        name: formData.name,
+        location: formData.location,
+        description: formData.description,
+        startTime: Timestamp.fromDate(new Date(formData.startTime)),
+        endTime: Timestamp.fromDate(new Date(formData.endTime)),
+        participated: [] // Initialize empty array for volunteer IDs
+      };
 
-    // Call the parent handler (you'll connect this to Firebase later)
-    if (onEventCreate) {
-      onEventCreate(newEvent);
+      // Add to Firebase
+      await addDoc(collection(db, 'Events'), newEvent);
+
+      // Reset form
+      setFormData({
+        name: '',
+        location: '',
+        startTime: '',
+        endTime: '',
+        description: ''
+      });
+
+      alert('Event created successfully!');
+      
+      // Call the parent handler to navigate back
+      if (onEventCreate) {
+        onEventCreate();
+      }
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert('Failed to create event. Please try again.');
     }
-
-    // Reset form
-    setFormData({
-      name: '',
-      location: '',
-      startTime: '',
-      endTime: '',
-      description: ''
-    });
-
-    alert('Event created successfully!');
   };
 
   return (

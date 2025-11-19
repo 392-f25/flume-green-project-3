@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import './VolunteerRegistration.css';
+import { db } from '../../lib/firebase';
+import { collection, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 const VolunteerRegistration = ({ eventId, eventName, onRegister }) => {
   const [formData, setFormData] = useState({
@@ -16,30 +18,43 @@ const VolunteerRegistration = ({ eventId, eventName, onRegister }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Create volunteer registration object
-    const registration = {
-      id: Date.now().toString(),
-      eventId: eventId,
-      ...formData,
-      registeredAt: new Date().toISOString()
-    };
+    try {
+      // Create volunteer document
+      const volunteerData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email
+      };
 
-    // Call the parent handler (you'll connect this to Firebase later)
-    if (onRegister) {
-      onRegister(registration);
+      // Add volunteer to Volunteers collection
+      const volunteerRef = await addDoc(collection(db, 'Volunteers'), volunteerData);
+
+      // Add volunteer ID to the event's participated array
+      const eventRef = doc(db, 'Events', eventId);
+      await updateDoc(eventRef, {
+        participated: arrayUnion(volunteerRef.id)
+      });
+
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: ''
+      });
+
+      alert('Registration successful! Thank you for volunteering.');
+      
+      // Call the parent handler if provided
+      if (onRegister) {
+        onRegister();
+      }
+    } catch (error) {
+      console.error('Error registering volunteer:', error);
+      alert('Failed to register. Please try again.');
     }
-
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: ''
-    });
-
-    alert('Registration successful! Thank you for volunteering.');
   };
 
   return (

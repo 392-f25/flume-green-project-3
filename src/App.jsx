@@ -1,28 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const App = () => {
   // State for managing the current view
   const [currentView, setCurrentView] = useState('eventList');
   const [selectedEventId, setSelectedEventId] = useState(null);
   
-  // State for storing events and volunteers (will be replaced with Firebase later)
+  // State for storing events and volunteers (now populated from Firebase)
   const [events, setEvents] = useState([]);
   const [volunteers, setVolunteers] = useState([]);
 
+  // Fetch events from Firebase in real-time
+  useEffect(() => {
+    const eventsRef = collection(db, 'Events');
+    const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
+      const eventsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Convert Firestore Timestamps to ISO strings for display
+        startTime: doc.data().startTime?.toDate?.()?.toISOString() || doc.data().startTime,
+        endTime: doc.data().endTime?.toDate?.()?.toISOString() || doc.data().endTime
+      }));
+      setEvents(eventsData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch all volunteers from Firebase in real-time
+  useEffect(() => {
+    const volunteersRef = collection(db, 'Volunteers');
+    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
+      const volunteersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setVolunteers(volunteersData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   // Handler for creating a new event
-  const handleEventCreate = (newEvent) => {
-    setEvents(prev => [...prev, newEvent]);
+  const handleEventCreate = () => {
+    // Navigation only - EventForm now handles Firebase directly
     setCurrentView('eventList');
   };
 
   // Handler for registering a volunteer
-  const handleVolunteerRegister = (registration) => {
-    setVolunteers(prev => [...prev, registration]);
+  const handleVolunteerRegister = () => {
+    // VolunteerRegistration now handles Firebase directly
+    alert('Registration successful!');
   };
 
   // Handler for viewing volunteers for a specific event
@@ -38,7 +72,14 @@ const App = () => {
 
   // Get volunteers for the selected event
   const getEventVolunteers = () => {
-    return volunteers.filter(volunteer => volunteer.eventId === selectedEventId);
+    // Find the event and get volunteers from the participated array
+    const event = events.find(e => e.id === selectedEventId);
+    if (!event || !event.participated) return [];
+    
+    // Match volunteers by their IDs in the participated array
+    return volunteers.filter(volunteer => 
+      event.participated.includes(volunteer.id)
+    );
   };
 
   return (
