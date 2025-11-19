@@ -1,0 +1,137 @@
+.event-list-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+}
+
+.event-list-container h2 {
+  color: #333;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 2rem;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+}
+
+.event-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.event-header {
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+
+.event-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-item {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.detail-item.description {
+  flex-direction: column;
+}
+
+.detail-item .label {
+  font-weight: 600;
+  color: #555;
+  min-width: 80px;
+}
+
+.detail-item .value {
+  color: #666;
+  flex: 1;
+}
+
+.detail-item.description .value {
+  margin: 0.5rem 0 0 0;
+  line-height: 1.5;
+}
+
+.event-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-btn {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.action-btn.primary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background-color: #45a049;
+}
+
+.action-btn.secondary {
+  background-color: #2196F3;
+  color: white;
+}
+
+.action-btn.secondary:hover {
+  background-color: #0b7dda;
+}
+
+.no-events {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #999;
+}
+
+.no-events p {
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .events-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .event-list-container {
+    padding: 1rem;
+  }
+}
