@@ -9,7 +9,7 @@ const App = () => {
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React! </p>
+        <p>Hello Vite + React!</p>
         <p>
           <button onClick={() => setCount(count => count + 1)}>
             count is: {count}
