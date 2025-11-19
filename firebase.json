@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "flume-30abd",
     "public": "dist",
     "ignore": [
       "firebase.json",
