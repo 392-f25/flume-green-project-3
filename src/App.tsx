@@ -5,6 +5,8 @@ import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
 import PublicRegistration from './components/PublicRegistration';
+import Login from './components/Login';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
@@ -27,6 +29,8 @@ interface Volunteer {
 
 // Main application component for authenticated/admin views
 const MainApp: React.FC = () => {
+  const { currentUser, signOut } = useAuth();
+  
   // State for managing the current view
   const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'volunteerRegistration' | 'volunteerList'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -34,6 +38,19 @@ const MainApp: React.FC = () => {
   // State for storing events and volunteers (now populated from Firebase)
   const [events, setEvents] = useState<Event[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  // If not authenticated, show login
+  if (!currentUser) {
+    return <Login />;
+  }
 
   // Fetch events from Firebase in real-time
   useEffect(() => {
@@ -118,7 +135,8 @@ const MainApp: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-gray-900">Volunteer Event Manager</h1>
-            <div className="flex space-x-4">
+            
+            <div className="flex items-center space-x-4">
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   currentView === 'eventList'
@@ -139,6 +157,23 @@ const MainApp: React.FC = () => {
               >
                 Create Event
               </button>
+
+              <div className="flex items-center space-x-3 pl-4 border-l border-gray-300">
+                {currentUser.photoURL && (
+                  <img 
+                    src={currentUser.photoURL} 
+                    alt={currentUser.displayName || 'User'} 
+                    className="w-8 h-8 rounded-full"
+                  />
+                )}
+                <span className="text-sm text-gray-700">{currentUser.displayName || currentUser.email}</span>
+                <button
+                  onClick={handleSignOut}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -187,10 +222,12 @@ const MainApp: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<MainApp />} />
-        <Route path="/register/:eventId" element={<PublicRegistration />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<MainApp />} />
+          <Route path="/register/:eventId" element={<PublicRegistration />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 };
