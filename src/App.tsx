@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
@@ -9,27 +8,50 @@ import PublicRegistration from './components/PublicRegistration';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
+interface Event {
+  id: string;
+  name: string;
+  location: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  participated?: string[];
+}
+
+interface Volunteer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 // Main application component for authenticated/admin views
-const MainApp = () => {
+const MainApp: React.FC = () => {
   // State for managing the current view
-  const [currentView, setCurrentView] = useState('eventList');
-  const [selectedEventId, setSelectedEventId] = useState(null);
-  
+  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'volunteerRegistration' | 'volunteerList'>('eventList');
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
   // State for storing events and volunteers (now populated from Firebase)
-  const [events, setEvents] = useState([]);
-  const [volunteers, setVolunteers] = useState([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
 
   // Fetch events from Firebase in real-time
   useEffect(() => {
     const eventsRef = collection(db, 'Events');
     const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
-      const eventsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        // Convert Firestore Timestamps to ISO strings for display
-        startTime: doc.data().startTime?.toDate?.()?.toISOString() || doc.data().startTime,
-        endTime: doc.data().endTime?.toDate?.()?.toISOString() || doc.data().endTime
-      }));
+      const eventsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          location: data.location || '',
+          description: data.description || '',
+          participated: data.participated || [],
+          // Convert Firestore Timestamps to ISO strings for display
+          startTime: data.startTime?.toDate?.()?.toISOString() || data.startTime,
+          endTime: data.endTime?.toDate?.()?.toISOString() || data.endTime
+        } as Event;
+      });
       setEvents(eventsData);
     });
 
@@ -40,10 +62,15 @@ const MainApp = () => {
   useEffect(() => {
     const volunteersRef = collection(db, 'Volunteers');
     const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
-      const volunteersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const volunteersData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          email: data.email || ''
+        } as Volunteer;
+      });
       setVolunteers(volunteersData);
     });
 
@@ -63,7 +90,7 @@ const MainApp = () => {
   };
 
   // Handler for viewing volunteers for a specific event
-  const handleViewVolunteers = (eventId) => {
+  const handleViewVolunteers = (eventId: string) => {
     setSelectedEventId(eventId);
     setCurrentView('volunteerList');
   };
@@ -81,31 +108,43 @@ const MainApp = () => {
     
     // Match volunteers by their IDs in the participated array
     return volunteers.filter(volunteer => 
-      event.participated.includes(volunteer.id)
+      event.participated!.includes(volunteer.id)
     );
   };
 
   return (
-    <div className="App">
-      <nav className="app-nav">
-        <h1>Volunteer Event Manager</h1>
-        <div className="nav-buttons">
-          <button 
-            className={currentView === 'eventList' ? 'nav-btn active' : 'nav-btn'}
-            onClick={() => setCurrentView('eventList')}
-          >
-            All Events
-          </button>
-          <button 
-            className={currentView === 'createEvent' ? 'nav-btn active' : 'nav-btn'}
-            onClick={() => setCurrentView('createEvent')}
-          >
-            Create Event
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-2xl font-bold text-gray-900">Volunteer Event Manager</h1>
+            <div className="flex space-x-4">
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'eventList'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentView('eventList')}
+              >
+                All Events
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'createEvent'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentView('createEvent')}
+              >
+                Create Event
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
 
-      <main className="app-main">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === 'eventList' && (
           <EventList 
             events={events}
@@ -117,7 +156,7 @@ const MainApp = () => {
           <EventForm onEventCreate={handleEventCreate} />
         )}
 
-        {currentView === 'volunteerRegistration' && (
+        {currentView === 'volunteerRegistration' && selectedEventId && (
           <VolunteerRegistration 
             eventId={selectedEventId}
             eventName={getSelectedEvent()?.name}
@@ -126,34 +165,26 @@ const MainApp = () => {
         )}
 
         {currentView === 'volunteerList' && (
-          <div>
-            <button 
-              className="back-btn"
+          <div className="space-y-6">
+            <button
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               onClick={() => setCurrentView('eventList')}
             >
               ← Back to Events
             </button>
-            <VolunteerList 
+            <VolunteerList
               volunteers={getEventVolunteers()}
               eventName={getSelectedEvent()?.name}
             />
           </div>
         )}
       </main>
-
-      {/* Info box for registration links */}
-      {currentView === 'eventList' && events.length > 0 && (
-        <div className="info-box">
-          <p><strong>Note:</strong> Click "Copy Registration Link" on any event to get the volunteer registration URL. 
-          You can share this link with volunteers to register for the event.</p>
-        </div>
-      )}
     </div>
   );
 };
 
 // Root App component with routing
-const App = () => {
+const App: React.FC = () => {
   return (
     <Router>
       <Routes>
