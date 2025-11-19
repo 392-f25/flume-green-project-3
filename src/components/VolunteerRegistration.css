@@ -76,3 +76,58 @@
 .submit-btn:active {
   transform: scale(0.98);
 }
+
+.submit-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.event-info {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.event-info h3 {
+  color: #2196F3;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.event-details-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-details-simple p {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-message h2 {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #666;
+  font-size: 1rem;
+}

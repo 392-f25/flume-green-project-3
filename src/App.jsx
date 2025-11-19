@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
+import PublicRegistration from './components/PublicRegistration';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
-const App = () => {
+// Main application component for authenticated/admin views
+const MainApp = () => {
   // State for managing the current view
   const [currentView, setCurrentView] = useState('eventList');
   const [selectedEventId, setSelectedEventId] = useState(null);
@@ -146,6 +149,18 @@ const App = () => {
         </div>
       )}
     </div>
+  );
+};
+
+// Root App component with routing
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/register/:eventId" element={<PublicRegistration />} />
+      </Routes>
+    </Router>
   );
 };
 
