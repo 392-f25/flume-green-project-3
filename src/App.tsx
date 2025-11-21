@@ -4,6 +4,7 @@ import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
+import PastVolunteers from './components/PastVolunteers';
 import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -34,7 +35,7 @@ const MainApp: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   
   // State for managing the current view
-  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList'>('eventList');
+  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'allPastVolunteers'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
@@ -151,6 +152,24 @@ const MainApp: React.FC = () => {
     );
   };
 
+  // Get all past volunteers who have participated in any of the organizer's events
+  const getAllPastVolunteers = () => {
+    // Collect all volunteer IDs from all events
+    const allVolunteerIds = new Set<string>();
+    events.forEach(event => {
+      if (event.participated) {
+        event.participated.forEach(volunteerId => {
+          allVolunteerIds.add(volunteerId);
+        });
+      }
+    });
+
+    // Get volunteer details for all collected IDs
+    return volunteers.filter(volunteer =>
+      allVolunteerIds.has(volunteer.id)
+    );
+  };
+
   // Handler for updating volunteer attendance
   const handleAttendanceChange = async (volunteerId: string, isPresent: boolean) => {
     if (!selectedEventId) return;
@@ -210,6 +229,16 @@ const MainApp: React.FC = () => {
               >
                 Create Event
               </button>
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'allPastVolunteers'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentView('allPastVolunteers')}
+              >
+                All Past Volunteers
+              </button>
 
               <div className="flex items-center space-x-3 pl-4 border-l border-gray-300">
                 {currentUser.photoURL && (
@@ -252,6 +281,13 @@ const MainApp: React.FC = () => {
           />
         )}
 
+        {currentView === 'allPastVolunteers' && (
+          <PastVolunteers
+            volunteers={getAllPastVolunteers()}
+            events={events}
+          />
+        )}
+
         {currentView === 'volunteerRegistration' && selectedEventId && (
           <VolunteerRegistration 
             eventId={selectedEventId}
@@ -271,7 +307,7 @@ const MainApp: React.FC = () => {
             <VolunteerList
               volunteers={getEventVolunteers()}
               eventName={getSelectedEvent()?.name}
-              eventId={selectedEventId}
+              eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
               onAttendanceChange={handleAttendanceChange}
             />
