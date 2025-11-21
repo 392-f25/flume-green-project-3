@@ -36,7 +36,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await signInWithPopup(auth, googleProvider);
       // Force reload to ensure clean state after authentication
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
@@ -47,7 +49,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await firebaseSignOut(auth);
       // Force reload to ensure clean state after sign out
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
