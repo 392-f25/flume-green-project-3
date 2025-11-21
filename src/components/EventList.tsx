@@ -6,6 +6,7 @@ interface Event {
   startTime: string;
   endTime: string;
   participated?: string[];
+  createdBy: string;
 }
 
 interface EventListProps {

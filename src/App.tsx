@@ -8,7 +8,7 @@ import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 
 interface Event {
   id: string;
@@ -18,6 +18,7 @@ interface Event {
   startTime: string;
   endTime: string;
   participated?: string[];
+  createdBy: string; // User ID of the event creator
 }
 
 interface Volunteer {
@@ -53,10 +54,15 @@ const MainApp: React.FC = () => {
     return <Login />;
   }
 
-  // Fetch events from Firebase in real-time
+  // Fetch events from Firebase in real-time - only for current user
   useEffect(() => {
+    if (!currentUser) return;
+
     const eventsRef = collection(db, 'Events');
-    const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
+    // Query only events created by the current user
+    const eventsQuery = query(eventsRef, where('createdBy', '==', currentUser.uid));
+    
+    const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
       const eventsData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -65,6 +71,7 @@ const MainApp: React.FC = () => {
           location: data.location || '',
           description: data.description || '',
           participated: data.participated || [],
+          createdBy: data.createdBy || '',
           // Convert Firestore Timestamps to ISO strings for display
           startTime: data.startTime?.toDate?.()?.toISOString() || data.startTime,
           endTime: data.endTime?.toDate?.()?.toISOString() || data.endTime
@@ -74,7 +81,7 @@ const MainApp: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   // Fetch all volunteers from Firebase in real-time
   useEffect(() => {

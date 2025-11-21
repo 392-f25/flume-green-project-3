@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../lib/firebase';
+import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 
 interface EventFormData {
@@ -69,6 +69,13 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
     e.preventDefault();
 
     try {
+      // Ensure user is authenticated
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('You must be logged in to create or edit events.');
+        return;
+      }
+
       const eventData = {
         name: formData.name,
         location: formData.location,
@@ -78,7 +85,7 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
       };
 
       if (isEditMode && editEvent) {
-        // Update existing event
+        // Update existing event (don't update createdBy field)
         await updateDoc(doc(db, 'Events', editEvent.id), eventData);
         alert('Event updated successfully!');
 
@@ -87,9 +94,10 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
           onEventUpdate();
         }
       } else {
-        // Create new event
+        // Create new event with createdBy field
         const newEvent = {
           ...eventData,
+          createdBy: currentUser.uid, // Add user ID to track ownership
           participated: [] // Initialize empty array for volunteer IDs
         };
 
