@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../../lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 
 interface EventFormData {
   name: string;
@@ -12,9 +12,18 @@ interface EventFormData {
 
 interface EventFormProps {
   onEventCreate?: () => void;
+  onEventUpdate?: () => void;
+  editEvent?: {
+    id: string;
+    name: string;
+    location: string;
+    startTime: string;
+    endTime: string;
+    description: string;
+  };
 }
 
-const EventForm: React.FC<EventFormProps> = ({ onEventCreate }) => {
+const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, editEvent }) => {
   const [formData, setFormData] = useState<EventFormData>({
     name: '',
     location: '',
@@ -22,6 +31,31 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate }) => {
     endTime: '',
     description: ''
   });
+
+  const isEditMode = !!editEvent;
+
+  // Populate form when in edit mode
+  useEffect(() => {
+    if (editEvent) {
+      setFormData({
+        name: editEvent.name,
+        location: editEvent.location,
+        description: editEvent.description,
+        // Convert Firebase Timestamp to datetime-local format
+        startTime: new Date(editEvent.startTime).toISOString().slice(0, 16),
+        endTime: new Date(editEvent.endTime).toISOString().slice(0, 16),
+      });
+    } else {
+      // Reset form when switching to create mode
+      setFormData({
+        name: '',
+        location: '',
+        startTime: '',
+        endTime: '',
+        description: ''
+      });
+    }
+  }, [editEvent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,39 +67,54 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
-      // Create event object for Firebase
-      const newEvent = {
+      const eventData = {
         name: formData.name,
         location: formData.location,
         description: formData.description,
         startTime: Timestamp.fromDate(new Date(formData.startTime)),
         endTime: Timestamp.fromDate(new Date(formData.endTime)),
-        participated: [] // Initialize empty array for volunteer IDs
       };
 
-      // Add to Firebase
-      await addDoc(collection(db, 'Events'), newEvent);
+      if (isEditMode && editEvent) {
+        // Update existing event
+        await updateDoc(doc(db, 'Events', editEvent.id), eventData);
+        alert('Event updated successfully!');
 
-      // Reset form
-      setFormData({
-        name: '',
-        location: '',
-        startTime: '',
-        endTime: '',
-        description: ''
-      });
+        // Call the parent handler to navigate back
+        if (onEventUpdate) {
+          onEventUpdate();
+        }
+      } else {
+        // Create new event
+        const newEvent = {
+          ...eventData,
+          participated: [] // Initialize empty array for volunteer IDs
+        };
 
-      alert('Event created successfully!');
-      
-      // Call the parent handler to navigate back
-      if (onEventCreate) {
-        onEventCreate();
+        // Add to Firebase
+        await addDoc(collection(db, 'Events'), newEvent);
+
+        // Reset form
+        setFormData({
+          name: '',
+          location: '',
+          startTime: '',
+          endTime: '',
+          description: ''
+        });
+
+        alert('Event created successfully!');
+
+        // Call the parent handler to navigate back
+        if (onEventCreate) {
+          onEventCreate();
+        }
       }
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event. Please try again.');
+      console.error(`Error ${isEditMode ? 'updating' : 'creating'} event:`, error);
+      alert(`Failed to ${isEditMode ? 'update' : 'create'} event. Please try again.`);
     }
   };
 
@@ -73,7 +122,9 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate }) => {
     <div className="max-w-2xl mx-auto">
       <div className="bg-white shadow-sm rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Create New Event</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {isEditMode ? 'Edit Event' : 'Create New Event'}
+          </h2>
         </div>
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -163,9 +214,9 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate }) => {
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isEditMode ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
                 </svg>
-                Create Event
+                {isEditMode ? 'Update Event' : 'Create Event'}
               </button>
             </div>
           </form>

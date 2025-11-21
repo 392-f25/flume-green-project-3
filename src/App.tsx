@@ -32,8 +32,9 @@ const MainApp: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   
   // State for managing the current view
-  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'volunteerRegistration' | 'volunteerList'>('eventList');
+  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   // State for storing events and volunteers (now populated from Firebase)
   const [events, setEvents] = useState<Event[]>([]);
@@ -112,6 +113,18 @@ const MainApp: React.FC = () => {
     setCurrentView('volunteerList');
   };
 
+  // Handler for editing an event
+  const handleEditEvent = (event: Event) => {
+    setEditingEvent(event);
+    setCurrentView('editEvent');
+  };
+
+  // Handler for when an event is updated
+  const handleEventUpdate = () => {
+    setEditingEvent(null);
+    setCurrentView('eventList');
+  };
+
   // Get the selected event details
   const getSelectedEvent = () => {
     return events.find(event => event.id === selectedEventId);
@@ -181,14 +194,22 @@ const MainApp: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === 'eventList' && (
-          <EventList 
+          <EventList
             events={events}
             onViewVolunteers={handleViewVolunteers}
+            onEditEvent={handleEditEvent}
           />
         )}
 
         {currentView === 'createEvent' && (
           <EventForm onEventCreate={handleEventCreate} />
+        )}
+
+        {currentView === 'editEvent' && editingEvent && (
+          <EventForm
+            editEvent={editingEvent}
+            onEventUpdate={handleEventUpdate}
+          />
         )}
 
         {currentView === 'volunteerRegistration' && selectedEventId && (
