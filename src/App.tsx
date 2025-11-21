@@ -8,7 +8,7 @@ import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, updateDoc, doc } from 'firebase/firestore';
 
 interface Event {
   id: string;
@@ -18,6 +18,7 @@ interface Event {
   startTime: string;
   endTime: string;
   participated?: string[];
+  attendance?: string[]; // Array of volunteer IDs marked as present
   createdBy: string; // User ID of the event creator
 }
 
@@ -71,6 +72,7 @@ const MainApp: React.FC = () => {
           location: data.location || '',
           description: data.description || '',
           participated: data.participated || [],
+          attendance: data.attendance || [],
           createdBy: data.createdBy || '',
           // Convert Firestore Timestamps to ISO strings for display
           startTime: data.startTime?.toDate?.()?.toISOString() || data.startTime,
@@ -142,11 +144,42 @@ const MainApp: React.FC = () => {
     // Find the event and get volunteers from the participated array
     const event = events.find(e => e.id === selectedEventId);
     if (!event || !event.participated) return [];
-    
+
     // Match volunteers by their IDs in the participated array
-    return volunteers.filter(volunteer => 
+    return volunteers.filter(volunteer =>
       event.participated!.includes(volunteer.id)
     );
+  };
+
+  // Handler for updating volunteer attendance
+  const handleAttendanceChange = async (volunteerId: string, isPresent: boolean) => {
+    if (!selectedEventId) return;
+
+    try {
+      const event = events.find(e => e.id === selectedEventId);
+      if (!event) return;
+
+      const currentAttendance = event.attendance || [];
+      let updatedAttendance: string[];
+
+      if (isPresent) {
+        // Add volunteer to attendance if not already present
+        updatedAttendance = [...new Set([...currentAttendance, volunteerId])];
+      } else {
+        // Remove volunteer from attendance
+        updatedAttendance = currentAttendance.filter(id => id !== volunteerId);
+      }
+
+      // Update the event in Firebase
+      await updateDoc(doc(db, 'Events', selectedEventId), {
+        attendance: updatedAttendance
+      });
+
+      // The real-time listener will automatically update the local state
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      alert('Failed to update attendance. Please try again.');
+    }
   };
 
   return (
@@ -238,6 +271,9 @@ const MainApp: React.FC = () => {
             <VolunteerList
               volunteers={getEventVolunteers()}
               eventName={getSelectedEvent()?.name}
+              eventId={selectedEventId}
+              attendance={getSelectedEvent()?.attendance}
+              onAttendanceChange={handleAttendanceChange}
             />
           </div>
         )}
