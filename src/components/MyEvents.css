@@ -1,0 +1,219 @@
+.my-events-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.my-events-container h2 {
+  color: #333;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 2rem;
+}
+
+.my-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.my-event-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.my-event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.card-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.project-lead {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item .label {
+  font-weight: 600;
+  color: #666;
+}
+
+.info-item .value {
+  color: #333;
+  text-align: right;
+}
+
+.hours-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.hours-stat {
+  padding: 1rem;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.hours-stat.approved {
+  background-color: #e8f5e9;
+}
+
+.hours-stat.expected {
+  background-color: #e3f2fd;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.pending-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: #fff3e0;
+  border-left: 4px solid #FF9800;
+  border-radius: 4px;
+  margin: 1rem 0;
+  color: #e65100;
+  font-weight: 500;
+}
+
+.pending-icon {
+  font-size: 1.2rem;
+}
+
+.submissions-list {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f0f0f0;
+}
+
+.submissions-list h4 {
+  color: #555;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.submission-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.submission-item.approved {
+  background-color: #e8f5e9;
+}
+
+.submission-item.pending {
+  background-color: #fff3e0;
+}
+
+.submission-date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.submission-hours {
+  font-weight: 600;
+  color: #333;
+}
+
+.submission-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.submission-status.approved {
+  color: #2e7d32;
+}
+
+.submission-status.pending {
+  color: #e65100;
+}
+
+.card-actions {
+  padding: 1rem 1.5rem;
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.view-details-btn:hover {
+  background-color: #0b7dda;
+}
+
+.no-projects {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #999;
+}
+
+.no-projects p {
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .my-events-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .my-events-container {
+    padding: 1rem;
+  }
+}

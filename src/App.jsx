@@ -1,166 +1,178 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
 import './App.css';
+import Login from './components/Login';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
-import VolunteerRegistration from './components/VolunteerRegistration';
-import VolunteerList from './components/VolunteerList';
-import PublicRegistration from './components/PublicRegistration';
-import { db } from '../lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import ProjectDetails from './components/ProjectDetails';
+import MyEvents from './components/MyEvents';
 
-// Main application component for authenticated/admin views
-const MainApp = () => {
-  // State for managing the current view
-  const [currentView, setCurrentView] = useState('eventList');
-  const [selectedEventId, setSelectedEventId] = useState(null);
+const App = () => {
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState(null);
   
-  // State for storing events and volunteers (now populated from Firebase)
-  const [events, setEvents] = useState([]);
-  const [volunteers, setVolunteers] = useState([]);
+  // Navigation state
+  const [currentView, setCurrentView] = useState('browse'); // browse, myEvents, createProject, projectDetails
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  
+  // Data state (will be replaced with Firebase later)
+  const [projects, setProjects] = useState([]);
 
-  // Fetch events from Firebase in real-time
-  useEffect(() => {
-    const eventsRef = collection(db, 'Events');
-    const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
-      const eventsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        // Convert Firestore Timestamps to ISO strings for display
-        startTime: doc.data().startTime?.toDate?.()?.toISOString() || doc.data().startTime,
-        endTime: doc.data().endTime?.toDate?.()?.toISOString() || doc.data().endTime
-      }));
-      setEvents(eventsData);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch all volunteers from Firebase in real-time
-  useEffect(() => {
-    const volunteersRef = collection(db, 'Volunteers');
-    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
-      const volunteersData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setVolunteers(volunteersData);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Handler for creating a new event
-  const handleEventCreate = () => {
-    // Navigation only - EventForm now handles Firebase directly
-    setCurrentView('eventList');
+  // Handler for user login
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setCurrentView('browse');
   };
 
-  // Handler for registering a volunteer
-  const handleVolunteerRegister = () => {
-    // VolunteerRegistration now handles Firebase directly
-    alert('Registration successful!');
+  // Handler for user logout
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentView('browse');
+    setSelectedProjectId(null);
   };
 
-  // Handler for viewing volunteers for a specific event
-  const handleViewVolunteers = (eventId) => {
-    setSelectedEventId(eventId);
-    setCurrentView('volunteerList');
+  // Handler for creating a new project
+  const handleProjectCreate = (newProject) => {
+    setProjects(prev => [...prev, newProject]);
+    setCurrentView('browse');
   };
 
-  // Get the selected event details
-  const getSelectedEvent = () => {
-    return events.find(event => event.id === selectedEventId);
+  // Handler for registering for a project
+  const handleRegister = (projectId, registration) => {
+    setProjects(prev => prev.map(project => {
+      if (project.id === projectId) {
+        return {
+          ...project,
+          volunteers: [...(project.volunteers || []), registration]
+        };
+      }
+      return project;
+    }));
+    alert('Successfully registered for project!');
   };
 
-  // Get volunteers for the selected event
-  const getEventVolunteers = () => {
-    // Find the event and get volunteers from the participated array
-    const event = events.find(e => e.id === selectedEventId);
-    if (!event || !event.participated) return [];
-    
-    // Match volunteers by their IDs in the participated array
-    return volunteers.filter(volunteer => 
-      event.participated.includes(volunteer.id)
-    );
+  // Handler for submitting volunteer hours
+  const handleSubmitHours = (projectId, submission) => {
+    setProjects(prev => prev.map(project => {
+      if (project.id === projectId) {
+        return {
+          ...project,
+          hourSubmissions: [...(project.hourSubmissions || []), submission]
+        };
+      }
+      return project;
+    }));
   };
+
+  // Handler for approving hours
+  const handleApproveHours = (projectId, approvedSubmission) => {
+    setProjects(prev => prev.map(project => {
+      if (project.id === projectId) {
+        return {
+          ...project,
+          hourSubmissions: project.hourSubmissions.map(submission => 
+            submission.id === approvedSubmission.id ? approvedSubmission : submission
+          )
+        };
+      }
+      return project;
+    }));
+    alert('Hours approved successfully!');
+  };
+
+  // Handler for sending emails (placeholder)
+  const handleSendEmail = (emailData) => {
+    console.log('Email would be sent:', emailData);
+    // You'll implement actual email sending with Firebase later
+  };
+
+  // Handler for selecting a project to view details
+  const handleSelectProject = (projectId) => {
+    setSelectedProjectId(projectId);
+    setCurrentView('projectDetails');
+  };
+
+  // Get the currently selected project
+  const getSelectedProject = () => {
+    return projects.find(p => p.id === selectedProjectId);
+  };
+
+  // If not logged in, show login page
+  if (!currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="App">
       <nav className="app-nav">
-        <h1>Volunteer Event Manager</h1>
+        <div className="nav-header">
+          <h1>Eagle Scout Project Tracker</h1>
+          <div className="user-info">
+            <span className="user-name">{currentUser.displayName}</span>
+            <span className="user-role">({currentUser.role})</span>
+            <button className="logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
+        </div>
         <div className="nav-buttons">
           <button 
-            className={currentView === 'eventList' ? 'nav-btn active' : 'nav-btn'}
-            onClick={() => setCurrentView('eventList')}
+            className={currentView === 'browse' || currentView === 'projectDetails' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setCurrentView('browse')}
           >
-            All Events
+            Browse Projects
           </button>
           <button 
-            className={currentView === 'createEvent' ? 'nav-btn active' : 'nav-btn'}
-            onClick={() => setCurrentView('createEvent')}
+            className={currentView === 'myEvents' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setCurrentView('myEvents')}
           >
-            Create Event
+            My Projects
+          </button>
+          <button 
+            className={currentView === 'createProject' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setCurrentView('createProject')}
+          >
+            Create Project
           </button>
         </div>
       </nav>
 
       <main className="app-main">
-        {currentView === 'eventList' && (
+        {currentView === 'browse' && (
           <EventList 
-            events={events}
-            onViewVolunteers={handleViewVolunteers}
+            projects={projects}
+            onSelectProject={handleSelectProject}
           />
         )}
 
-        {currentView === 'createEvent' && (
-          <EventForm onEventCreate={handleEventCreate} />
-        )}
-
-        {currentView === 'volunteerRegistration' && (
-          <VolunteerRegistration 
-            eventId={selectedEventId}
-            eventName={getSelectedEvent()?.name}
-            onRegister={handleVolunteerRegister}
+        {currentView === 'myEvents' && (
+          <MyEvents 
+            projects={projects}
+            currentUser={currentUser}
+            onSelectProject={handleSelectProject}
+            onSubmitHours={handleSubmitHours}
           />
         )}
 
-        {currentView === 'volunteerList' && (
-          <div>
-            <button 
-              className="back-btn"
-              onClick={() => setCurrentView('eventList')}
-            >
-              ← Back to Events
-            </button>
-            <VolunteerList 
-              volunteers={getEventVolunteers()}
-              eventName={getSelectedEvent()?.name}
-            />
-          </div>
+        {currentView === 'createProject' && (
+          <EventForm 
+            currentUser={currentUser}
+            onEventCreate={handleProjectCreate} 
+          />
+        )}
+
+        {currentView === 'projectDetails' && getSelectedProject() && (
+          <ProjectDetails 
+            project={getSelectedProject()}
+            currentUser={currentUser}
+            onRegister={handleRegister}
+            onSubmitHours={handleSubmitHours}
+            onApproveHours={handleApproveHours}
+            onSendEmail={handleSendEmail}
+            onBack={() => setCurrentView('browse')}
+          />
         )}
       </main>
-
-      {/* Info box for registration links */}
-      {currentView === 'eventList' && events.length > 0 && (
-        <div className="info-box">
-          <p><strong>Note:</strong> Click "Copy Registration Link" on any event to get the volunteer registration URL. 
-          You can share this link with volunteers to register for the event.</p>
-        </div>
-      )}
     </div>
-  );
-};
-
-// Root App component with routing
-const App = () => {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<MainApp />} />
-        <Route path="/register/:eventId" element={<PublicRegistration />} />
-      </Routes>
-    </Router>
   );
 };
 

@@ -1,0 +1,114 @@
+.email-volunteers-container {
+  margin-top: 2rem;
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.email-volunteers-container h3 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.recipients-info {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border-left: 4px solid #FF9800;
+}
+
+.recipients-info p {
+  margin: 0 0 0.5rem 0;
+  color: #555;
+}
+
+.recipients-list {
+  margin-top: 0.75rem;
+}
+
+.recipients-list summary {
+  cursor: pointer;
+  color: #2196F3;
+  font-weight: 600;
+  user-select: none;
+}
+
+.recipients-list summary:hover {
+  text-decoration: underline;
+}
+
+.recipients-list ul {
+  margin-top: 0.75rem;
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.recipients-list li {
+  padding: 0.25rem 0;
+  color: #666;
+}
+
+.email-form {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #FF9800;
+}
+
+.form-group textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.send-btn {
+  padding: 0.875rem 1.5rem;
+  background-color: #FF9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 0.5rem;
+}
+
+.send-btn:hover {
+  background-color: #F57C00;
+}
+
+.send-btn:active {
+  transform: scale(0.98);
+}

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import './EventForm.css';
-import { db } from '../../lib/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
-const EventForm = ({ onEventCreate }) => {
+const EventForm = ({ onEventCreate, currentUser }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    projectName: '',
     location: '',
-    startTime: '',
-    endTime: '',
-    description: ''
+    startDate: '',
+    endDate: '',
+    description: '',
+    parentVolunteersNeeded: '',
+    scoutVolunteersNeeded: '',
+    hoursPerVolunteer: ''
   });
 
   const handleChange = (e) => {
@@ -20,58 +21,54 @@ const EventForm = ({ onEventCreate }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
-    try {
-      // Create event object for Firebase
-      const newEvent = {
-        name: formData.name,
-        location: formData.location,
-        description: formData.description,
-        startTime: Timestamp.fromDate(new Date(formData.startTime)),
-        endTime: Timestamp.fromDate(new Date(formData.endTime)),
-        participated: [] // Initialize empty array for volunteer IDs
-      };
+    // Create Eagle Scout project object with a unique ID
+    const newProject = {
+      id: Date.now().toString(),
+      ...formData,
+      ownerId: currentUser?.id,
+      ownerName: currentUser?.displayName,
+      createdAt: new Date().toISOString(),
+      volunteers: [],
+      hourSubmissions: []
+    };
 
-      // Add to Firebase
-      await addDoc(collection(db, 'Events'), newEvent);
-
-      // Reset form
-      setFormData({
-        name: '',
-        location: '',
-        startTime: '',
-        endTime: '',
-        description: ''
-      });
-
-      alert('Event created successfully!');
-      
-      // Call the parent handler to navigate back
-      if (onEventCreate) {
-        onEventCreate();
-      }
-    } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event. Please try again.');
+    // Call the parent handler (you'll connect this to Firebase later)
+    if (onEventCreate) {
+      onEventCreate(newProject);
     }
+
+    // Reset form
+    setFormData({
+      projectName: '',
+      location: '',
+      startDate: '',
+      endDate: '',
+      description: '',
+      parentVolunteersNeeded: '',
+      scoutVolunteersNeeded: '',
+      hoursPerVolunteer: ''
+    });
+
+    alert('Eagle Scout project created successfully!');
   };
 
   return (
     <div className="event-form-container">
-      <h2>Create New Event</h2>
+      <h2>Create Eagle Scout Project</h2>
       <form onSubmit={handleSubmit} className="event-form">
         <div className="form-group">
-          <label htmlFor="name">Event Name *</label>
+          <label htmlFor="projectName">Project Name *</label>
           <input
             type="text"
-            id="name"
-            name="name"
-            value={formData.name}
+            id="projectName"
+            name="projectName"
+            value={formData.projectName}
             onChange={handleChange}
             required
-            placeholder="Enter event name"
+            placeholder="Enter project name"
           />
         </div>
 
@@ -84,48 +81,95 @@ const EventForm = ({ onEventCreate }) => {
             value={formData.location}
             onChange={handleChange}
             required
-            placeholder="Enter event location"
+            placeholder="Enter project location"
           />
         </div>
 
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="startDate">Start Date *</label>
+            <input
+              type="date"
+              id="startDate"
+              name="startDate"
+              value={formData.startDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="endDate">End Date *</label>
+            <input
+              type="date"
+              id="endDate"
+              name="endDate"
+              value={formData.endDate}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="parentVolunteersNeeded">Parent Volunteers Needed *</label>
+            <input
+              type="number"
+              id="parentVolunteersNeeded"
+              name="parentVolunteersNeeded"
+              value={formData.parentVolunteersNeeded}
+              onChange={handleChange}
+              required
+              min="0"
+              placeholder="0"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="scoutVolunteersNeeded">Scout Volunteers Needed *</label>
+            <input
+              type="number"
+              id="scoutVolunteersNeeded"
+              name="scoutVolunteersNeeded"
+              value={formData.scoutVolunteersNeeded}
+              onChange={handleChange}
+              required
+              min="0"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
         <div className="form-group">
-          <label htmlFor="startTime">Start Time *</label>
+          <label htmlFor="hoursPerVolunteer">Expected Hours Per Volunteer *</label>
           <input
-            type="datetime-local"
-            id="startTime"
-            name="startTime"
-            value={formData.startTime}
+            type="number"
+            id="hoursPerVolunteer"
+            name="hoursPerVolunteer"
+            value={formData.hoursPerVolunteer}
             onChange={handleChange}
             required
+            min="0.5"
+            step="0.5"
+            placeholder="0"
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="endTime">End Time *</label>
-          <input
-            type="datetime-local"
-            id="endTime"
-            name="endTime"
-            value={formData.endTime}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="description">Description *</label>
+          <label htmlFor="description">Project Description *</label>
           <textarea
             id="description"
             name="description"
             value={formData.description}
             onChange={handleChange}
             required
-            rows="4"
-            placeholder="Enter event description"
+            rows="5"
+            placeholder="Describe the work that will be done during this Eagle Scout project..."
           />
         </div>
 
-        <button type="submit" className="submit-btn">Create Event</button>
+        <button type="submit" className="submit-btn">Post Eagle Scout Project</button>
       </form>
     </div>
   );
