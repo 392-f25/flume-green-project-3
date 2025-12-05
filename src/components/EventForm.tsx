@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
-import type { EagleProject } from './EventList';
+import type { EagleProject } from '../types/projects';
 
 interface EventFormData {
   name: string;
@@ -58,7 +58,7 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
     }
   }, [editEvent]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -68,7 +68,7 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     try {
