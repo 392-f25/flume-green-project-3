@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import VolunteerTable from './volunteers/VolunteerTable';
 import VolunteerStats from './volunteers/VolunteerStats';
 import { Volunteer } from '../types/projects';
+import { notifyVolunteers } from '../utils/notifications';
 
 interface VolunteerListProps {
   volunteers: Volunteer[];
@@ -12,6 +13,7 @@ interface VolunteerListProps {
   attendance?: string[];
   onHoursApproval?: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => void;
   onEditHours?: (volunteerId: string, timeRequestId: string, newHours: number) => Promise<void>;
+  onNotifyAwaitingSubmission?: (volunteers: Volunteer[]) => void;
   creatorId?: string;
   currentUserId?: string;
   parentVolunteers?: number;
@@ -29,11 +31,16 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
   attendance = [],
   onHoursApproval,
   onEditHours,
+  onNotifyAwaitingSubmission,
   parentVolunteers,
   studentVolunteers
 }) => {
   const parentVolunteersList = useMemo(() => volunteers.filter((volunteer) => volunteer.role === 'parent'), [volunteers]);
   const studentVolunteersList = useMemo(() => volunteers.filter((volunteer) => volunteer.role === 'scout'), [volunteers]);
+  const awaitingSubmissionList = useMemo(
+    () => volunteers.filter((volunteer) => !attendance.includes(volunteer.id) && volunteer.submittedHours === undefined),
+    [volunteers, attendance]
+  );
 
   const parentCount = parentVolunteersList.length;
   const studentCount = studentVolunteersList.length;
@@ -129,6 +136,32 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
       />
 
       <div className="space-y-6">
+        {awaitingSubmissionList.length > 0 && (
+          <VolunteerTable
+            volunteers={awaitingSubmissionList}
+            roleLabel="Awaiting Submission"
+            roleColor="red"
+            attendance={attendance}
+            eventId={eventId}
+            eventName={eventName}
+            eventDate={eventDate}
+            eventDescription={eventDescription}
+            creatorId={creatorId}
+            currentUserId={currentUserId}
+            onHoursApproval={onHoursApproval}
+            onEditHours={onEditHours}
+            onNotify={(list) => {
+              onNotifyAwaitingSubmission?.(list);
+              notifyVolunteers(list, {
+                eventName,
+                eventDate,
+                eventDescription,
+                eventId,
+                senderId: currentUserId
+              });
+            }}
+          />
+        )}
         <VolunteerTable
           volunteers={parentVolunteersList}
           roleLabel="Parent Volunteers"

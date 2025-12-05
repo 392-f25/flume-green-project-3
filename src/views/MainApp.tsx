@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { EagleProject } from '../types/projects';
 import { useProjectData } from '../hooks/useProjectData';
 import TopNav from '../components/navigation/TopNav';
+import { useNotifications } from '../hooks/useNotifications';
 import AllProjectsView from './AllProjectsView';
 import CreateProjectView from './CreateProjectView';
 import EditProjectView from './EditProjectView';
@@ -17,6 +18,7 @@ const MainAppInner: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<ViewKey>('eventList');
   const { events, eventVolunteers, userTimeRequests, selectedEventId, editingEvent, setSelectedEventId, setEditingEvent, registerForEvent, unregisterFromEvent, approveVolunteerHours, editVolunteerHours } = useProjectData({ currentUser });
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useNotifications(currentUser);
 
   if (!currentUser) {
     return <Login />;
@@ -66,6 +68,9 @@ const MainAppInner: React.FC = () => {
         userName={currentUser.displayName || currentUser.email}
         userPhotoUrl={currentUser.photoURL}
         onSignOut={handleSignOut}
+        notifications={notifications}
+        onMarkNotificationRead={markNotificationRead}
+        onMarkAllNotificationsRead={markAllNotificationsRead}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { Volunteer } from '../../types/projects';
+import { notifyVolunteers } from '../../utils/notifications';
 
 interface VolunteerTableProps {
   volunteers: Volunteer[];
   roleLabel: string;
-  roleColor: 'green' | 'blue';
+  roleColor: 'green' | 'blue' | 'red';
   attendance: string[];
   eventId?: string;
+  eventName?: string;
+  eventDate?: any;
+  eventDescription?: string;
   creatorId?: string;
   currentUserId?: string;
   onHoursApproval?: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => void;
   onEditHours?: (volunteerId: string, timeRequestId: string, newHours: number) => Promise<void>;
+  onNotify?: (volunteers: Volunteer[]) => void;
 }
 
-const VolunteerTable: React.FC<VolunteerTableProps> = ({ volunteers, roleLabel, roleColor, attendance, eventId, creatorId, currentUserId, onHoursApproval, onEditHours }) => {
+const VolunteerTable: React.FC<VolunteerTableProps> = ({ volunteers, roleLabel, roleColor, attendance, eventId, eventName, eventDate, eventDescription, creatorId, currentUserId, onHoursApproval, onEditHours, onNotify }) => {
   const [editingVolunteerId, setEditingVolunteerId] = useState<string | null>(null);
   const [hoursDraft, setHoursDraft] = useState('');
   const [savingVolunteerId, setSavingVolunteerId] = useState<string | null>(null);
@@ -51,13 +56,52 @@ const VolunteerTable: React.FC<VolunteerTableProps> = ({ volunteers, roleLabel, 
     }
   };
 
-  const headerColor = roleColor === 'green' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200';
-  const titleColor = roleColor === 'green' ? 'text-green-700' : 'text-blue-700';
+  // const headerColor = roleColor === 'green' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200';
+  let headerColor: string;
+  switch(roleColor) {
+    case 'green': 
+      headerColor = 'bg-green-50 border-green-200';
+      break;
+    case 'blue': 
+      headerColor = 'bg-blue-50 border-blue-200';
+      break;
+    default:
+      headerColor = 'bg-red-50 border-red-200';
+  }
+  const titleColor = 'text-black';
+
+  const handleNotify = () => {
+    if (eventId) {
+      notifyVolunteers(volunteers, {
+        eventName,
+        eventDate,
+        eventDescription,
+        eventId,
+        senderId: currentUserId,
+      });
+    } else if (onNotify) {
+      onNotify(volunteers);
+    }
+  };
 
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
       <div className={`${headerColor} border-b px-6 py-4`}>
-        <h3 className={`text-lg font-semibold text-gray-900 ${titleColor}`}>{roleLabel}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className={`text-lg font-semibold text-gray-900 ${titleColor}`}>{roleLabel}</h3>
+          {onNotify && (
+            <button
+              type="button"
+              onClick={handleNotify}
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Notify All
+            </button>
+          )}
+        </div>
       </div>
       <div className="overflow-x-auto">
         {volunteers.length > 0 ? (
