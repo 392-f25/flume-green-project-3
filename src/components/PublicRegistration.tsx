@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../lib/firebase';
 import { doc, getDoc, collection, addDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
@@ -36,7 +36,7 @@ const PublicRegistration: React.FC = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const projectRef = doc(db, 'Project', eventId);
+        const projectRef = doc(db, 'Project', eventId || '');
         const projectSnap = await getDoc(projectRef);
         
         if (projectSnap.exists()) {
@@ -62,7 +62,7 @@ const PublicRegistration: React.FC = () => {
     }
   }, [eventId]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -70,7 +70,7 @@ const PublicRegistration: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     
@@ -86,7 +86,7 @@ const PublicRegistration: React.FC = () => {
       const volunteerRef = await addDoc(collection(db, 'Volunteers'), volunteerData);
 
       // Add volunteer ID to the project's registered_volunteers array
-      const projectRef = doc(db, 'Project', eventId);
+      const projectRef = doc(db, 'Project', eventId || '');
       await updateDoc(projectRef, {
         registered_volunteers: arrayUnion(volunteerRef.id)
       });
