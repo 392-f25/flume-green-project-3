@@ -13,6 +13,8 @@ interface Volunteer {
 interface VolunteerListProps {
   volunteers: Volunteer[];
   eventName?: string;
+  eventDate?: any;
+  eventDescription?: string;
   eventId?: string;
   attendance?: string[];
   onAttendanceChange?: (volunteerId: string, isPresent: boolean) => void;
@@ -27,6 +29,8 @@ interface VolunteerListProps {
 const VolunteerList: React.FC<VolunteerListProps> = ({
   volunteers,
   eventName,
+  eventDate,
+  eventDescription,
   eventId,
   creatorId,
   currentUserId,
@@ -59,6 +63,15 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
   const formattedApprovedHoursTotal = Number.isInteger(approvedHoursTotal)
     ? approvedHoursTotal.toString()
     : approvedHoursTotal.toFixed(2);
+
+  // Calculate approved, pending, and awaiting submission counts
+  const approvedCount = attendance.length;
+  const pendingCount = volunteers.filter(v => 
+    !attendance.includes(v.id) && v.submittedHours !== undefined
+  ).length;
+  const awaitingSubmissionCount = volunteers.filter(v => 
+    !attendance.includes(v.id) && v.submittedHours === undefined
+  ).length;
 
   // Helper function to render volunteer row
   const startEditing = (volunteer: Volunteer) => {
@@ -199,6 +212,36 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
         )}
       </div>
 
+      {/* Event Information Card */}
+      {(eventDate || eventDescription) && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Details</h3>
+          <div className="space-y-3">
+            {eventDate && (
+              <div className="flex items-start space-x-2">
+                <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Date</p>
+                  <p className="text-sm text-gray-600">
+                    {typeof eventDate?.toDate === 'function'
+                      ? eventDate.toDate().toLocaleString()
+                      : new Date(eventDate).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
+            {eventDescription && (
+              <div className="pt-2 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
+                <p className="text-sm text-gray-600 leading-relaxed">{eventDescription}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {volunteers && volunteers.length > 0 ? (
         <>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -242,10 +285,13 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
               {eventId && onHoursApproval && (
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="text-green-600">
-                    Approved: <span className="font-semibold">{attendance.length}</span>
+                    Approved: <span className="font-semibold">{approvedCount}</span>
                   </span>
-                  <span className="text-gray-600">
-                    Pending: <span className="font-semibold">{volunteers.length - attendance.length}</span>
+                  <span className="text-yellow-600">
+                    Pending: <span className="font-semibold">{pendingCount}</span>
+                  </span>
+                  <span className="text-red-400">
+                    Awaiting Submission: <span className="font-semibold">{awaitingSubmissionCount}</span>
                   </span>
                 </div>
               )}

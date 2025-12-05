@@ -499,6 +499,8 @@ const MainApp: React.FC = () => {
             <VolunteerList
               volunteers={getEventVolunteers()}
               eventName={getSelectedEvent()?.name}
+              eventDate={getSelectedEvent()?.date}
+              eventDescription={getSelectedEvent()?.description}
               eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
               onHoursApproval={handleHoursApproval}
