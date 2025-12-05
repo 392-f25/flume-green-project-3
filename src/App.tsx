@@ -7,6 +7,7 @@ import VolunteerList from './components/VolunteerList';
 import PastVolunteers from './components/PastVolunteers';
 import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
+import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query, updateDoc, doc, Timestamp } from 'firebase/firestore';
@@ -29,7 +30,7 @@ const MainApp: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   
   // State for managing the current view
-  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'volunteeringHistory' | 'myProjects'>('eventList');
+  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'volunteeringHistory' | 'myProjects' | 'logHours'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<Project | null>(null);
 
@@ -115,6 +116,17 @@ const MainApp: React.FC = () => {
   const handleViewVolunteers = (eventId: string) => {
     setSelectedEventId(eventId);
     setCurrentView('volunteerList');
+  };
+
+  // Handler for logging hours for a specific event
+  const handleLogHours = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setCurrentView('logHours');
+  };
+
+  // Handler for when time log is submitted
+  const handleTimeLogSubmit = () => {
+    setCurrentView('eventList');
   };
 
   // Handler for editing a project
@@ -276,6 +288,7 @@ const MainApp: React.FC = () => {
             events={events}
             onViewVolunteers={handleViewVolunteers}
             onEditEvent={handleEditEvent}
+            onLogHours={handleLogHours}
           />
         )}
 
@@ -319,6 +332,23 @@ const MainApp: React.FC = () => {
               eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
               onAttendanceChange={handleAttendanceChange}
+            />
+          </div>
+        )}
+
+        {currentView === 'logHours' && selectedEventId && (
+          <div className="space-y-6">
+            <button
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              onClick={() => setCurrentView('eventList')}
+            >
+              ← Back to Projects
+            </button>
+            <TimeLogForm
+              projectId={selectedEventId}
+              projectName={getSelectedEvent()?.name}
+              onSubmit={handleTimeLogSubmit}
+              onCancel={() => setCurrentView('eventList')}
             />
           </div>
         )}
