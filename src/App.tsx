@@ -4,7 +4,6 @@ import EventForm from './components/EventForm';
 import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
-import PastVolunteers from './components/PastVolunteers';
 import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -36,7 +35,7 @@ const MainApp: React.FC = () => {
 
   // State for storing projects and volunteers (now populated from Firebase)
   const [events, setEvents] = useState<Project[]>([]);
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [eventVolunteers, setEventVolunteers] = useState<Volunteer[]>([]);
 
   const handleSignOut = async () => {
     try {
@@ -82,24 +81,49 @@ const MainApp: React.FC = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Fetch all volunteers from Firebase in real-time
+  // Fetch volunteers for selected event
   useEffect(() => {
-    const volunteersRef = collection(db, 'Volunteers');
-    const unsubscribe = onSnapshot(volunteersRef, (snapshot) => {
-      const volunteersData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          email: data.email || ''
-        } as Volunteer;
-      });
-      setVolunteers(volunteersData);
-    });
+    const fetchEventVolunteers = async () => {
+      if (!selectedEventId) {
+        setEventVolunteers([]);
+        return;
+      }
 
-    return () => unsubscribe();
-  }, []);
+      const event = events.find(e => e.id === selectedEventId);
+      
+      if (!event || !event.registered_volunteers || event.registered_volunteers.length === 0) {
+        setEventVolunteers([]);
+        return;
+      }
+
+      // For each registered UID, get user info
+      const volunteersData: Volunteer[] = [];
+      
+      for (const uid of event.registered_volunteers) {
+        // Check if this is the current user
+        if (currentUser && currentUser.uid === uid) {
+          volunteersData.push({
+            id: uid,
+            firstName: currentUser.displayName?.split(' ')[0] || 'User',
+            lastName: currentUser.displayName?.split(' ').slice(1).join(' ') || '',
+            email: currentUser.email || 'N/A'
+          });
+        } else {
+          // For other users, show UID since we can't fetch their Auth data
+          volunteersData.push({
+            id: uid,
+            firstName: 'User',
+            lastName: '',
+            email: 'Not available'
+          });
+        }
+      }
+      
+      setEventVolunteers(volunteersData);
+    };
+
+    fetchEventVolunteers();
+  }, [selectedEventId, events, currentUser]);
 
   // Handler for creating a new event
   const handleEventCreate = () => {
@@ -186,59 +210,13 @@ const MainApp: React.FC = () => {
 
   // Get volunteers for the selected event
   const getEventVolunteers = () => {
-    // Find the event and get volunteers from the registered_volunteers array
-    const event = events.find(e => e.id === selectedEventId);
-    
-    if (!event || !event.registered_volunteers || event.registered_volunteers.length === 0) {
-      return [];
-    }
-
-    // For each registered UID, check if they match volunteers in the Volunteers collection
-    // If not found in Volunteers collection, they're Auth users we can still display
-    const volunteersData: Volunteer[] = [];
-    
-    event.registered_volunteers.forEach(uid => {
-      // Check if volunteer exists in Volunteers collection
-      const volunteerDoc = volunteers.find(v => v.id === uid);
-      if (volunteerDoc) {
-        volunteersData.push(volunteerDoc);
-      } else {
-        // If not in Volunteers collection, create a basic entry
-        // This handles users who registered through Auth
-        volunteersData.push({
-          id: uid,
-          firstName: 'User',
-          lastName: uid.substring(0, 6), // Show partial UID for identification
-          email: 'N/A'
-        });
-      }
-    });
-    
-    return volunteersData;
+    return eventVolunteers;
   };
 
   // Get the count of currently registered volunteers for a project
   const getRegisteredVolunteerCount = (projectId: string) => {
     const event = events.find(e => e.id === projectId);
     return event?.registered_volunteers?.length || 0;
-  };
-
-  // Get all past volunteers who have participated in any of the organizer's events
-  const getAllPastVolunteers = () => {
-    // Collect all volunteer IDs from all events
-    const allVolunteerIds = new Set<string>();
-    events.forEach(event => {
-      if (event.participated) {
-        event.participated.forEach(volunteerId => {
-          allVolunteerIds.add(volunteerId);
-        });
-      }
-    });
-
-    // Get volunteer details for all collected IDs
-    return volunteers.filter(volunteer =>
-      allVolunteerIds.has(volunteer.id)
-    );
   };
 
   // Get projects created by the current user
@@ -307,16 +285,6 @@ const MainApp: React.FC = () => {
               </button>
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === 'volunteeringHistory'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={() => setCurrentView('volunteeringHistory')}
-              >
-                Volunteering History
-              </button>
-              <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   currentView === 'myProjects'
                     ? 'bg-primary-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -368,13 +336,6 @@ const MainApp: React.FC = () => {
           <EventForm
             editEvent={editingEvent}
             onEventUpdate={handleEventUpdate}
-          />
-        )}
-
-        {currentView === 'volunteeringHistory' && (
-          <PastVolunteers
-            volunteers={getAllPastVolunteers()}
-            events={events}
           />
         )}
 
