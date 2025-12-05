@@ -1,9 +1,10 @@
+import { useState } from 'react';
+
 interface Volunteer {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  registeredAt?: string;
   submittedHours?: number;
   timeRequestId?: string;
   role?: 'scout' | 'parent';
@@ -16,6 +17,7 @@ interface VolunteerListProps {
   attendance?: string[];
   onAttendanceChange?: (volunteerId: string, isPresent: boolean) => void;
   onHoursApproval?: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => void;
+  onEditHours?: (volunteerId: string, timeRequestId: string, newHours: number) => Promise<void>;
   creatorId?: string;
   currentUserId?: string;
   parentVolunteers?: number;
@@ -31,66 +33,162 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
   attendance = [],
   onAttendanceChange,
   onHoursApproval,
+  onEditHours,
   parentVolunteers,
   studentVolunteers
 }) => {
+  const [editingVolunteerId, setEditingVolunteerId] = useState<string | null>(null);
+  const [hoursDraft, setHoursDraft] = useState('');
+  const [savingVolunteerId, setSavingVolunteerId] = useState<string | null>(null);
+
   // Separate volunteers by role
   const parentVolunteersList = volunteers.filter(v => v.role === 'parent');
   const studentVolunteersList = volunteers.filter(v => v.role === 'scout');
-  
+
   // Counts
   const parentCount = parentVolunteersList.length;
   const studentCount = studentVolunteersList.length;
   const desiredParents = parentVolunteers || 0;
   const desiredStudents = studentVolunteers || 0;
+  const approvedHoursTotal = volunteers.reduce((total, volunteer) => {
+    if (attendance.includes(volunteer.id) && typeof volunteer.submittedHours === 'number') {
+      return total + volunteer.submittedHours;
+    }
+    return total;
+  }, 0);
+  const formattedApprovedHoursTotal = Number.isInteger(approvedHoursTotal)
+    ? approvedHoursTotal.toString()
+    : approvedHoursTotal.toFixed(2);
 
   // Helper function to render volunteer row
-  const renderVolunteerRow = (volunteer: Volunteer) => (
-    <tr key={volunteer.id} className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {volunteer.firstName}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {volunteer.lastName}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {volunteer.email}
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {volunteer.registeredAt
-          ? new Date(volunteer.registeredAt).toLocaleDateString() + ' ' +
-            new Date(volunteer.registeredAt).toLocaleTimeString()
-          : 'N/A'}
-      </td>
-      {eventId && onHoursApproval && (
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          {volunteer.submittedHours !== undefined ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {volunteer.submittedHours} hours
-            </span>
-          ) : (
-            <span className="text-gray-400 italic">Not submitted</span>
-          )}
+  const startEditing = (volunteer: Volunteer) => {
+    if (volunteer.submittedHours === undefined) return;
+    setEditingVolunteerId(volunteer.id);
+    setHoursDraft(volunteer.submittedHours.toString());
+  };
+
+  const cancelEditing = () => {
+    setEditingVolunteerId(null);
+    setHoursDraft('');
+  };
+
+  const saveEditedHours = async (volunteer: Volunteer) => {
+    if (!onEditHours || !volunteer.timeRequestId) {
+      cancelEditing();
+      return;
+    }
+
+    const parsedHours = parseFloat(hoursDraft);
+    if (Number.isNaN(parsedHours) || parsedHours <= 0) {
+      alert('Please enter a valid number of hours greater than zero.');
+      return;
+    }
+
+    setSavingVolunteerId(volunteer.id);
+
+    try {
+      await onEditHours(volunteer.id, volunteer.timeRequestId, parsedHours);
+      cancelEditing();
+    } catch (error) {
+      console.error('Error updating hours:', error);
+      alert('Failed to update hours. Please try again.');
+    } finally {
+      setSavingVolunteerId(null);
+    }
+  };
+
+  const renderVolunteerRow = (volunteer: Volunteer) => {
+    const isOwnerView = currentUserId === creatorId;
+    const isEditing = editingVolunteerId === volunteer.id;
+    const isApproved = attendance.includes(volunteer.id);
+
+    return (
+      <tr key={volunteer.id} className="hover:bg-gray-50">
+        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          {volunteer.firstName}
         </td>
-      )}
-      {eventId && onHoursApproval && currentUserId === creatorId && (
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              checked={attendance.includes(volunteer.id)}
-              disabled={volunteer.submittedHours === undefined}
-              onChange={(e) => onHoursApproval(volunteer.id, volunteer.timeRequestId, e.target.checked)}
-              className="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <span className={`ml-2 text-sm ${volunteer.submittedHours === undefined ? 'text-gray-400' : ''}`}>
-              {attendance.includes(volunteer.id) ? 'Approved' : 'Approve'}
-            </span>
-          </label>
+          {volunteer.lastName}
         </td>
-      )}
-    </tr>
-  );
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          {volunteer.email}
+        </td>
+        {eventId && onHoursApproval && (
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            {isEditing ? (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  value={hoursDraft}
+                  onChange={(e) => setHoursDraft(e.target.value)}
+                  className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => saveEditedHours(volunteer)}
+                  disabled={savingVolunteerId === volunteer.id}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-primary-500 disabled:opacity-60"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={savingVolunteerId === volunteer.id}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-gray-300 disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : volunteer.submittedHours !== undefined ? (
+              <div className="inline-flex items-center space-x-2">
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isApproved ? 'bg-gray-100 text-gray-600 border border-gray-200' : 'bg-blue-100 text-blue-800'
+                    }`}
+                >
+                  {volunteer.submittedHours} hours
+                </span>
+                {isOwnerView && onEditHours && volunteer.timeRequestId && (
+                  <button
+                    type="button"
+                    onClick={() => startEditing(volunteer)}
+                    className="inline-flex items-center text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={`Edit hours for ${volunteer.firstName} ${volunteer.lastName}`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232a2.25 2.25 0 113.182 3.182L9.06 17.768a1.5 1.5 0 01-.53.337l-3.478 1.159a.375.375 0 01-.474-.474l1.16-3.478a1.5 1.5 0 01.337-.53l9.384-9.384z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 8L16 6" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="text-gray-400 italic">Not submitted</span>
+            )}
+          </td>
+        )}
+        {eventId && onHoursApproval && currentUserId === creatorId && (
+          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <label className="inline-flex items-center">
+              {/** Disable checkbox once approved so organizers cannot unapprove already approved hours */}
+              <input
+                type="checkbox"
+                checked={attendance.includes(volunteer.id)}
+                disabled={volunteer.submittedHours === undefined || isApproved}
+                onChange={(e) => onHoursApproval(volunteer.id, volunteer.timeRequestId, e.target.checked)}
+                className="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <span className={`ml-2 text-sm ${volunteer.submittedHours === undefined || isApproved ? 'text-gray-400' : ''}`}>
+                {attendance.includes(volunteer.id) ? 'Approved' : 'Approve'}
+              </span>
+            </label>
+          </td>
+        )}
+      </tr>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -132,6 +230,14 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                     </span>
                   </div>
                 )}
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-indigo-700">
+                    Hours Approved: <span className="font-semibold">{formattedApprovedHoursTotal}</span>
+                  </span>
+                </div>
               </div>
               {eventId && onHoursApproval && (
                 <div className="flex items-center space-x-4 text-sm">
@@ -146,7 +252,7 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* Parent Volunteers Column */}
             <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
               <div className="bg-green-50 border-b border-green-200 px-6 py-4">
@@ -172,9 +278,6 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Registered At
                         </th>
                         {eventId && onHoursApproval && (
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -225,9 +328,6 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Email
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Registered At
                         </th>
                         {eventId && onHoursApproval && (
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -8,13 +8,7 @@ import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query, updateDoc, doc, Timestamp, where, getDocs, getDoc, deleteField } from 'firebase/firestore';
-import type { EagleProject } from './components/EventList';
-
-// Eagle Project interface matching the new database structure
-interface Project extends EagleProject {
-  attendance?: string[]; // Array of volunteer IDs marked as present
-  registered_volunteers?: Record<string, string>; // Map of volunteer IDs to roles ('scout' or 'parent') who registered
-}
+import type { EagleProject, TimeRequestStatus } from './components/EventList';
 
 interface Volunteer {
   id: string;
@@ -29,15 +23,16 @@ interface Volunteer {
 // Main application component for authenticated/admin views
 const MainApp: React.FC = () => {
   const { currentUser, signOut } = useAuth();
-  
+
   // State for managing the current view
   const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'volunteeringHistory' | 'myProjects' | 'logHours'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [editingEvent, setEditingEvent] = useState<Project | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EagleProject | null>(null);
 
   // State for storing projects and volunteers (now populated from Firebase)
-  const [events, setEvents] = useState<Project[]>([]);
+  const [events, setEvents] = useState<EagleProject[]>([]);
   const [eventVolunteers, setEventVolunteers] = useState<Volunteer[]>([]);
+  const [userTimeRequests, setUserTimeRequests] = useState<Record<string, TimeRequestStatus>>({});
 
   const handleSignOut = async () => {
     try {
@@ -59,10 +54,18 @@ const MainApp: React.FC = () => {
     const projectsRef = collection(db, 'Project');
     // Query only projects created by the current user
     const projectsQuery = query(projectsRef);
-    
+
     const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
-      const projectsData = snapshot.docs.map(doc => {
+      const projectsData: EagleProject[] = snapshot.docs.map(doc => {
         const data = doc.data();
+        const registeredVolunteersRaw = (data.registered_volunteers || {}) as Record<string, unknown>;
+        const registeredVolunteersTyped = Object.entries(registeredVolunteersRaw).reduce<Record<string, 'scout' | 'parent'>>((acc, [volunteerId, role]) => {
+          if (role === 'scout' || role === 'parent') {
+            acc[volunteerId] = role;
+          }
+          return acc;
+        }, {});
+
         return {
           id: doc.id,
           name: data.name || '',
@@ -74,10 +77,47 @@ const MainApp: React.FC = () => {
           volunteer_hours: data.volunteer_hours || 0,
           participated: data.participated || [],
           attendance: data.attendance || [],
-          registered_volunteers: data.registered_volunteers || [],
-        } as Project;
+          registered_volunteers: registeredVolunteersTyped,
+        };
       });
       setEvents(projectsData);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  // Track the current user's time requests across all events
+  useEffect(() => {
+    if (!currentUser) {
+      setUserTimeRequests({});
+      return;
+    }
+
+    const timeRequestsQuery = query(
+      collection(db, 'TimeRequests'),
+      where('requestor', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(timeRequestsQuery, (snapshot) => {
+      const statusMap: Record<string, TimeRequestStatus> = {};
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const projectId = data.project_id;
+        if (!projectId) return;
+
+        const status: TimeRequestStatus = {
+          requestId: docSnap.id,
+          status: data.approved ? 'approved' : 'pending'
+        };
+
+        const existing = statusMap[projectId];
+        if (!existing || (status.status === 'approved' && existing.status !== 'approved')) {
+          statusMap[projectId] = status;
+        }
+      });
+
+      setUserTimeRequests(statusMap);
     });
 
     return () => unsubscribe();
@@ -92,7 +132,7 @@ const MainApp: React.FC = () => {
       }
 
       const event = events.find(e => e.id === selectedEventId);
-      
+
       if (!event || !event.registered_volunteers || Object.keys(event.registered_volunteers).length === 0) {
         setEventVolunteers([]);
         return;
@@ -106,27 +146,32 @@ const MainApp: React.FC = () => {
           // Get user document directly from Users collection using UID as document ID
           const userDocRef = doc(db, 'Users', uid);
           const userDocSnap = await getDoc(userDocRef);
-          
+
           // Query TimeRequests collection for this volunteer and event
           const timeRequestsQuery = query(
             collection(db, 'TimeRequests'),
             where('requestor', '==', uid),
-            where('project_id', '==', selectedEventId),
-            where('approved', '==', false)
+            where('project_id', '==', selectedEventId)
           );
           const timeRequestsSnapshot = await getDocs(timeRequestsQuery);
-          
+
           let submittedHours: number | undefined = undefined;
           let timeRequestId: string | undefined = undefined;
-          
+
           if (!timeRequestsSnapshot.empty) {
-            // Found a time request - use the first one
-            const timeRequestDoc = timeRequestsSnapshot.docs[0];
-            const timeRequestData = timeRequestDoc.data();
-            submittedHours = timeRequestData.length_hours;
-            timeRequestId = timeRequestDoc.id;
+            const pendingRequestDoc = timeRequestsSnapshot.docs.find(docSnapshot => docSnapshot.data().approved === false);
+            const approvedRequestDoc = timeRequestsSnapshot.docs.find(docSnapshot => docSnapshot.data().approved === true);
+            const selectedRequestDoc = pendingRequestDoc || approvedRequestDoc || timeRequestsSnapshot.docs[0];
+
+            if (selectedRequestDoc) {
+              const timeRequestData = selectedRequestDoc.data();
+              if (typeof timeRequestData.length_hours === 'number') {
+                submittedHours = timeRequestData.length_hours;
+              }
+              timeRequestId = selectedRequestDoc.id;
+            }
           }
-          
+
           if (userDocSnap.exists()) {
             // Found user document
             const userData = userDocSnap.data();
@@ -177,7 +222,7 @@ const MainApp: React.FC = () => {
           });
         }
       }
-      
+
       setEventVolunteers(volunteersData);
     };
 
@@ -251,7 +296,7 @@ const MainApp: React.FC = () => {
   };
 
   // Handler for editing a project
-  const handleEditEvent = (event: Project) => {
+  const handleEditEvent = (event: EagleProject) => {
     setEditingEvent(event);
     setCurrentView('editEvent');
   };
@@ -275,7 +320,7 @@ const MainApp: React.FC = () => {
   // Get the count of currently registered volunteers for a project
   const getRegisteredVolunteerCount = (projectId: string) => {
     const event = events.find(e => e.id === projectId);
-    return event?.registered_volunteers?.length || 0;
+    return event?.registered_volunteers ? Object.keys(event.registered_volunteers).length : 0;
   };
 
   // Get projects created by the current user
@@ -303,7 +348,7 @@ const MainApp: React.FC = () => {
       if (isApproved) {
         // Add volunteer to attendance if not already present
         updatedAttendance = [...new Set([...currentAttendance, volunteerId])];
-        
+
         // Update the TimeRequest document to mark it as approved
         await updateDoc(doc(db, 'TimeRequests', timeRequestId), {
           approved: true
@@ -325,40 +370,72 @@ const MainApp: React.FC = () => {
     }
   };
 
+  const handleEditVolunteerHours = async (volunteerId: string, timeRequestId: string, newHours: number) => {
+    if (!selectedEventId) {
+      throw new Error('No event selected.');
+    }
+
+    const event = events.find(e => e.id === selectedEventId);
+    if (!event) {
+      throw new Error('Event not found.');
+    }
+
+    if (!currentUser || event.creator_id !== currentUser.uid) {
+      throw new Error('Only the event creator can edit volunteer hours.');
+    }
+
+    try {
+      await updateDoc(doc(db, 'TimeRequests', timeRequestId), {
+        length_hours: newHours
+      });
+
+      setEventVolunteers(prev =>
+        prev.map(volunteer =>
+          volunteer.id === volunteerId
+            ? {
+              ...volunteer,
+              submittedHours: newHours
+            }
+            : volunteer
+        )
+      );
+    } catch (error) {
+      console.error('Error editing volunteer hours:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-gray-900">Eagle Project Manager</h1>
-            
+
             <div className="flex items-center space-x-4">
               <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === 'eventList'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'eventList'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 onClick={() => setCurrentView('eventList')}
               >
                 All Projects
               </button>
               <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === 'createEvent'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'createEvent'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 onClick={() => setCurrentView('createEvent')}
               >
                 Create Project
               </button>
               <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === 'myProjects'
-                    ? 'bg-primary-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'myProjects'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
                 onClick={() => setCurrentView('myProjects')}
               >
                 My Projects
@@ -366,9 +443,9 @@ const MainApp: React.FC = () => {
 
               <div className="flex items-center space-x-3 pl-4 border-l border-gray-300">
                 {currentUser.photoURL && (
-                  <img 
-                    src={currentUser.photoURL} 
-                    alt={currentUser.displayName || 'User'} 
+                  <img
+                    src={currentUser.photoURL}
+                    alt={currentUser.displayName || 'User'}
                     className="w-8 h-8 rounded-full"
                   />
                 )}
@@ -395,6 +472,7 @@ const MainApp: React.FC = () => {
             currentUserId={currentUser?.uid}
             onRegisterEvent={handleRegisterForEvent}
             onUnregisterEvent={handleUnregisterFromEvent}
+            timeRequestStatuses={userTimeRequests}
           />
         )}
 
@@ -424,6 +502,7 @@ const MainApp: React.FC = () => {
               eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
               onHoursApproval={handleHoursApproval}
+              onEditHours={handleEditVolunteerHours}
               creatorId={getSelectedEvent()?.creator_id}
               currentUserId={currentUser?.uid}
               parentVolunteers={getSelectedEvent()?.parent_volunteers}
@@ -467,12 +546,7 @@ const MainApp: React.FC = () => {
             {getMyProjects().length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {getMyProjects().map((event) => (
-                  <div key={event.id} className="bg-white rounded-lg shadow-sm border-2 border-green-200 hover:shadow-md transition-shadow relative">
-                    {/* My Projects badge */}
-                    <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      My Project
-                    </div>
-
+                  <div key={event.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                     <div className="p-6">
                       <div className="mb-4">
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.name}</h3>
@@ -523,7 +597,7 @@ const MainApp: React.FC = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                               </svg>
                               <p className="text-sm font-semibold text-blue-600">
-                                {getRegisteredVolunteerCount(event.id)} / {event.parent_volunteers + event.student_volunteers} volunteers
+                                {getRegisteredVolunteerCount(event.id)} / {(event.parent_volunteers ?? 0) + (event.student_volunteers ?? 0)} volunteers
                               </p>
                             </div>
                           </div>

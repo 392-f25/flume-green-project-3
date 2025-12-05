@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
-
-// Eagle Project type matching the new database structure
-export interface EagleProject {
-  id?: string;
-  name: string;
-  description: string;
-  date: Timestamp | string;
-  creator_id: string;
-  parent_volunteers: number;
-  student_volunteers: number;
-  volunteer_hours: number;
-}
+import type { EagleProject } from './EventList';
 
 interface EventFormData {
   name: string;
@@ -44,13 +33,13 @@ const EventForm: React.FC<EventFormProps> = ({ onEventCreate, onEventUpdate, edi
   // Populate form when in edit mode
   useEffect(() => {
     if (editEvent) {
-      const dateValue = editEvent.date instanceof Timestamp 
+      const dateValue = editEvent.date instanceof Timestamp
         ? editEvent.date.toDate().toISOString().slice(0, 16)
         : new Date(editEvent.date).toISOString().slice(0, 16);
-      
+
       setFormData({
         name: editEvent.name,
-        description: editEvent.description,
+        description: editEvent.description || '',
         date: dateValue,
         parent_volunteers: editEvent.parent_volunteers || 0,
         student_volunteers: editEvent.student_volunteers || 0,
