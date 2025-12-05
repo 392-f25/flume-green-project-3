@@ -6,6 +6,8 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../../lib/firebase';
+import { db } from '../../lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -34,7 +36,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Save user profile to Users collection
+      if (user) {
+        const userDocRef = doc(db, 'Users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        // Only create/update if document doesn't exist or needs update
+        if (!userDocSnap.exists()) {
+          const displayName = user.displayName || '';
+          const nameParts = displayName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          await setDoc(userDocRef, {
+            firstName,
+            lastName,
+            email: user.email || '',
+            createdAt: new Date().toISOString()
+          }, { merge: true });
+        }
+      }
+      
       // Force reload to ensure clean state after authentication
       setTimeout(() => {
         window.location.reload();
@@ -59,8 +84,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      
+      // Save user profile to Users collection if user is signed in
+      if (user) {
+        try {
+          const userDocRef = doc(db, 'Users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          // Only create/update if document doesn't exist
+          if (!userDocSnap.exists()) {
+            const displayName = user.displayName || '';
+            const nameParts = displayName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            await setDoc(userDocRef, {
+              firstName,
+              lastName,
+              email: user.email || '',
+              createdAt: new Date().toISOString()
+            }, { merge: true });
+          }
+        } catch (error) {
+          console.error('Error saving user profile:', error);
+        }
+      }
+      
       setLoading(false);
     });
 

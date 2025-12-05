@@ -7,7 +7,7 @@ import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, updateDoc, doc, Timestamp, where, getDocs, deleteField } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, Timestamp, where, getDocs, getDoc, deleteField } from 'firebase/firestore';
 import type { EagleProject } from './components/EventList';
 
 // Eagle Project interface matching the new database structure
@@ -98,17 +98,14 @@ const MainApp: React.FC = () => {
         return;
       }
 
-      // Fetch user info from Volunteers collection
+      // Fetch user info from Users collection using UIDs from registered_volunteers
       const volunteersData: Volunteer[] = [];
 
       for (const uid of Object.keys(event.registered_volunteers)) {
         try {
-          // Query Volunteers collection where uid field matches
-          const volunteersQuery = query(
-            collection(db, 'Volunteers'),
-            where('uid', '==', uid)
-          );
-          const querySnapshot = await getDocs(volunteersQuery);
+          // Get user document directly from Users collection using UID as document ID
+          const userDocRef = doc(db, 'Users', uid);
+          const userDocSnap = await getDoc(userDocRef);
           
           // Query TimeRequests collection for this volunteer and event
           const timeRequestsQuery = query(
@@ -130,21 +127,20 @@ const MainApp: React.FC = () => {
             timeRequestId = timeRequestDoc.id;
           }
           
-          if (!querySnapshot.empty) {
-            // Found volunteer document
-            const volunteerDoc = querySnapshot.docs[0];
-            const volunteerData = volunteerDoc.data();
+          if (userDocSnap.exists()) {
+            // Found user document
+            const userData = userDocSnap.data();
             volunteersData.push({
               id: uid,
-              firstName: volunteerData.firstName || 'Unknown',
-              lastName: volunteerData.lastName || '',
-              email: volunteerData.email || 'N/A',
+              firstName: userData.firstName || userData.first_name || 'Unknown',
+              lastName: userData.lastName || userData.last_name || '',
+              email: userData.email || 'N/A',
               submittedHours,
               timeRequestId,
               role: event.registered_volunteers[uid] as 'scout' | 'parent'
             });
           } else {
-            // No volunteer document found - fallback to current user if it matches
+            // No user document found - fallback to current user if it matches
             if (currentUser && currentUser.uid === uid) {
               const displayName = currentUser.displayName || 'User';
               const nameParts = displayName.split(' ');
@@ -158,7 +154,7 @@ const MainApp: React.FC = () => {
                 role: event.registered_volunteers[uid] as 'scout' | 'parent'
               });
             } else {
-              // No data found
+              // No data found - use UID as placeholder
               volunteersData.push({
                 id: uid,
                 firstName: 'Unknown',
@@ -171,7 +167,7 @@ const MainApp: React.FC = () => {
             }
           }
         } catch (error) {
-          console.error(`Error fetching volunteer ${uid}:`, error);
+          console.error(`Error fetching user ${uid}:`, error);
           volunteersData.push({
             id: uid,
             firstName: 'Unknown',
@@ -430,6 +426,8 @@ const MainApp: React.FC = () => {
               onHoursApproval={handleHoursApproval}
               creatorId={getSelectedEvent()?.creator_id}
               currentUserId={currentUser?.uid}
+              parentVolunteers={getSelectedEvent()?.parent_volunteers}
+              studentVolunteers={getSelectedEvent()?.student_volunteers}
             />
           </div>
         )}
