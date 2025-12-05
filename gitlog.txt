@@ -1,0 +1,256 @@
+commit e030fc43b191b3f5b2bb9962989cc028efaf32a2
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Fri Nov 21 15:06:08 2025 -0600
+
+    add past volunteer view
+
+M	src/App.tsx
+A	src/components/PastVolunteers.tsx
+
+commit 46d4321c09cceb35042c7bea703a7226af8a11e2
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Fri Nov 21 10:43:33 2025 -0600
+
+    add attendance ui and backend support
+
+M	src/App.tsx
+M	src/components/VolunteerList.tsx
+
+commit 584344483f87232dca7f55a914f9874d07f4f1bc
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Fri Nov 21 10:39:12 2025 -0600
+
+    add small time out to ensure navigation works each time
+
+M	src/contexts/AuthContext.tsx
+
+commit 10cd4dde8fdb129b1e4cf81ffccb817e9b2524c0
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Fri Nov 21 10:36:35 2025 -0600
+
+    made events private based on volunteer organizer (so one organizer cannot see the other organizer's evnets and participant lists)
+
+M	src/App.tsx
+M	src/components/EventForm.tsx
+M	src/components/EventList.tsx
+
+commit 1b0ee4a025e769f0debedb05bf6ad9f40bff11d5
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Fri Nov 21 10:30:23 2025 -0600
+
+    add edit event feature
+
+A	.github/workflows/.main.yml.swp
+A	cypress.config.ts
+A	cypress/fixtures/example.json
+A	cypress/support/commands.ts
+A	cypress/support/e2e.ts
+M	package-lock.json
+M	package.json
+M	src/App.tsx
+M	src/components/EventForm.tsx
+M	src/components/EventList.tsx
+
+commit 8b23b33c58af84994b363b416134b224cabd30f0
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Wed Nov 19 14:55:31 2025 -0600
+
+    add firebase authentication"; git push
+    "
+    "
+
+M	lib/firebase.ts
+M	src/App.tsx
+A	src/components/Login.tsx
+A	src/contexts/AuthContext.tsx
+
+commit aa67cca5da62074898038919d4127d57cfee81dc
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Wed Nov 19 14:45:23 2025 -0600
+
+    make everything typescript from javascript, modernize ui; git push
+    '
+    ''
+
+M	index.html
+M	package-lock.json
+M	package.json
+A	postcss.config.js
+D	src/App.css
+R050	src/App.jsx	src/App.tsx
+D	src/components/EventForm.css
+D	src/components/EventForm.jsx
+A	src/components/EventForm.tsx
+D	src/components/EventList.css
+D	src/components/EventList.jsx
+A	src/components/EventList.tsx
+D	src/components/PublicRegistration.jsx
+A	src/components/PublicRegistration.tsx
+D	src/components/VolunteerList.css
+D	src/components/VolunteerList.jsx
+A	src/components/VolunteerList.tsx
+D	src/components/VolunteerRegistration.css
+D	src/components/VolunteerRegistration.jsx
+A	src/components/VolunteerRegistration.tsx
+M	src/index.css
+R098	src/index.jsx	src/index.tsx
+A	tailwind.config.js
+A	tsconfig.json
+A	tsconfig.node.json
+M	vite.config.js
+A	vite.config.ts
+
+commit 5f3e8e45c55d8b5813a79bedc9898434ee81e1d1
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Tue Nov 18 22:15:52 2025 -0600
+
+    add unlisted form for joining an event as a volunteer
+
+M	package-lock.json
+M	package.json
+M	src/App.jsx
+A	src/components/PublicRegistration.jsx
+M	src/components/VolunteerRegistration.css
+
+commit 0ada2d870b633bdb36bc1d96faa5b4b574da9014
+Author: danielwong0115 <daniellwong442@gmail.com>
+Date:   Tue Nov 18 22:07:34 2025 -0600
+
+    Initial Frontend Firebase Attempt
+
+M	lib/firebase.ts
+M	src/App.jsx
+M	src/components/EventForm.jsx
+M	src/components/VolunteerRegistration.jsx
+
+commit 07eb8a3e22fbd3c6ad27a3fd753acaf8d9191696
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Tue Nov 18 21:54:21 2025 -0600
+
+    test project
+
+M	.github/workflows/main.yml
+
+commit c48d6f5897fd484e0a4086e630ff97867a8be138
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Tue Nov 18 21:33:27 2025 -0600
+
+    remove unit test
+
+D	src/App.test.jsx
+
+commit 620f8b6bb36fc7f5be07757d99733ff6ad8031b3
+Author: Harrison Gillespie <110575518+Warry13@users.noreply.github.com>
+Date:   Tue Nov 18 21:28:43 2025 -0600
+
+    Initial Website and Framework
+
+M	src/App.css
+M	src/App.jsx
+A	src/components/EventForm.css
+A	src/components/EventForm.jsx
+A	src/components/EventList.css
+A	src/components/EventList.jsx
+A	src/components/VolunteerList.css
+A	src/components/VolunteerList.jsx
+A	src/components/VolunteerRegistration.css
+A	src/components/VolunteerRegistration.jsx
+
+commit 439c8243e52d3386739506da5937f5209f955044
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Tue Nov 18 21:24:29 2025 -0600
+
+    test firebase action
+
+M	src/App.jsx
+
+commit 03300053dc77e9bb6476d5d05a92524944da9979
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Tue Nov 18 21:09:01 2025 -0600
+
+    add site information inside of hosting
+
+M	firebase.json
+
+commit 87dfdcd0c88954cdac0c57817f3ae5061a142b32
+Author: Harrison Gillespie <110575518+Warry13@users.noreply.github.com>
+Date:   Mon Nov 17 15:54:27 2025 -0600
+
+    Firebase fix
+
+M	firebase.json
+
+commit f804ba35c7d39400d70539f154af07fb7ee6bd26
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Mon Nov 17 15:50:44 2025 -0600
+
+    remove broken yaml
+
+D	.github/workflows/main.yaml
+
+commit 6fc4d8dd890bef3c22a4816b2e1e7adcb7bcb44b
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Mon Nov 17 15:46:28 2025 -0600
+
+    test action
+
+M	src/App.jsx
+
+commit d9e2376f3def9ead1cdab5e763b05dc3806b415d
+Author: Andrew <acyuan7@gmail.com>
+Date:   Mon Nov 17 15:45:42 2025 -0600
+
+    yaml
+
+A	.github/workflows/main.yaml
+
+commit 2d526cd191dc0ed86020d71db1de5c6f1bf38723
+Author: Harrison Gillespie <110575518+Warry13@users.noreply.github.com>
+Date:   Mon Nov 17 15:40:53 2025 -0600
+
+    Initial Firebase
+
+A	.firebaserc
+A	firebase.json
+A	lib/firebase.ts
+M	package-lock.json
+M	package.json
+A	public/index.html
+
+commit 375d291a62c841a4165534aa09029ffffdecd32f
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Mon Nov 17 15:26:38 2025 -0600
+
+    remove cypress
+
+M	.github/workflows/main.yml
+
+commit 7f64a8308295694367aad6cc4a7593abe1f25775
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Mon Nov 17 15:25:48 2025 -0600
+
+    add yml file
+
+A	.github/workflows/main.yml
+
+commit c9009b00f78cb9e51a90d0110c34d90e1a5cfce8
+Author: Kaival Shah <kaival.s.shah@gmail.com>
+Date:   Mon Nov 17 15:22:02 2025 -0600
+
+    project init
+
+A	.gitignore
+A	LICENSE
+A	README.md
+A	index.html
+A	package-lock.json
+A	package.json
+A	public/favicon.svg
+A	public/robots.txt
+A	src/App.css
+A	src/App.jsx
+A	src/App.test.jsx
+A	src/index.css
+A	src/index.jsx
+A	src/logo.svg
+A	vite.config.js

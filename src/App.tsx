@@ -56,7 +56,7 @@ const MainApp: React.FC = () => {
 
     const projectsRef = collection(db, 'Project');
     // Query only projects created by the current user
-    const projectsQuery = query(projectsRef, where('creator_id', '==', currentUser.uid));
+    const projectsQuery = query(projectsRef);
     
     const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
       const projectsData = snapshot.docs.map(doc => {
