@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../../lib/firebase';
-import { doc, getDoc, collection, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
 
-interface Event {
+// Eagle Project interface matching the new database structure
+interface Project {
   id: string;
   name: string;
-  location: string;
   description: string;
-  startTime: string;
-  endTime: string;
+  date: Timestamp | string;
+  parent_volunteers: number;
+  student_volunteers: number;
+  volunteer_hours: number;
   participated?: string[];
 }
 
@@ -21,7 +23,7 @@ interface VolunteerFormData {
 
 const PublicRegistration: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
-  const [event, setEvent] = useState<Event | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<VolunteerFormData>({
@@ -32,32 +34,31 @@ const PublicRegistration: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchProject = async () => {
       try {
-        const eventRef = doc(db, 'Events', eventId);
-        const eventSnap = await getDoc(eventRef);
+        const projectRef = doc(db, 'Project', eventId);
+        const projectSnap = await getDoc(projectRef);
         
-        if (eventSnap.exists()) {
-          const eventData = {
-            id: eventSnap.id,
-            ...eventSnap.data(),
-            startTime: eventSnap.data().startTime?.toDate?.()?.toISOString() || eventSnap.data().startTime,
-            endTime: eventSnap.data().endTime?.toDate?.()?.toISOString() || eventSnap.data().endTime
-          };
-          setEvent(eventData);
+        if (projectSnap.exists()) {
+          const projectData = {
+            id: projectSnap.id,
+            ...projectSnap.data(),
+            date: projectSnap.data().date || Timestamp.now(),
+          } as Project;
+          setProject(projectData);
         } else {
-          setError('Event not found. Please check the registration link.');
+          setError('Project not found. Please check the registration link.');
         }
       } catch (err) {
-        console.error('Error fetching event:', err);
-        setError('Failed to load event details. Please try again later.');
+        console.error('Error fetching project:', err);
+        setError('Failed to load project details. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
     if (eventId) {
-      fetchEvent();
+      fetchProject();
     }
   }, [eventId]);
 
@@ -84,9 +85,9 @@ const PublicRegistration: React.FC = () => {
       // Add volunteer to Volunteers collection
       const volunteerRef = await addDoc(collection(db, 'Volunteers'), volunteerData);
 
-      // Add volunteer ID to the event's participated array
-      const eventRef = doc(db, 'Events', eventId);
-      await updateDoc(eventRef, {
+      // Add volunteer ID to the project's participated array
+      const projectRef = doc(db, 'Project', eventId);
+      await updateDoc(projectRef, {
         participated: arrayUnion(volunteerRef.id)
       });
 
@@ -107,9 +108,11 @@ const PublicRegistration: React.FC = () => {
     }
   };
 
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return 'N/A';
-    const date = new Date(dateTimeString);
+  const formatDateTime = (dateValue: Timestamp | string | undefined) => {
+    if (!dateValue) return 'N/A';
+    const date = dateValue instanceof Timestamp 
+      ? dateValue.toDate() 
+      : new Date(dateValue);
     return date.toLocaleString();
   };
 
@@ -118,7 +121,7 @@ const PublicRegistration: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading event details...</p>
+          <p className="mt-4 text-gray-600">Loading project details...</p>
         </div>
       </div>
     );
@@ -148,34 +151,31 @@ const PublicRegistration: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 text-center">Volunteer Registration</h2>
           </div>
 
-          {event && (
+          {project && (
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">{event.name}</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">{project.name}</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex items-start space-x-2">
-                  <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-gray-600">{event.location}</span>
-                </div>
                 <div className="flex items-start space-x-2">
                   <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <div className="text-gray-600">
-                    <div>Start: {formatDateTime(event.startTime)}</div>
-                    <div>End: {formatDateTime(event.endTime)}</div>
-                  </div>
+                  <span className="text-gray-600">Date: {formatDateTime(project.date)}</span>
                 </div>
-                {event.description && (
+                {project.description && (
                   <div className="flex items-start space-x-2">
                     <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span className="text-gray-600">{event.description}</span>
+                    <span className="text-gray-600">{project.description}</span>
                   </div>
                 )}
+                <div className="flex items-start space-x-2 pt-2 border-t border-gray-200">
+                  <div className="text-gray-600 text-xs">
+                    <div>Parent Volunteers: {project.parent_volunteers}</div>
+                    <div>Student Volunteers: {project.student_volunteers}</div>
+                    <div>Volunteer Hours: {project.volunteer_hours}</div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

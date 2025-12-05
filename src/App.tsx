@@ -9,18 +9,12 @@ import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, where, updateDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import type { EagleProject } from './components/EventList';
 
-interface Event {
-  id: string;
-  name: string;
-  location: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  participated?: string[];
+// Eagle Project interface matching the new database structure
+interface Project extends EagleProject {
   attendance?: string[]; // Array of volunteer IDs marked as present
-  createdBy: string; // User ID of the event creator
 }
 
 interface Volunteer {
@@ -37,10 +31,10 @@ const MainApp: React.FC = () => {
   // State for managing the current view
   const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'allPastVolunteers'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Project | null>(null);
 
-  // State for storing events and volunteers (now populated from Firebase)
-  const [events, setEvents] = useState<Event[]>([]);
+  // State for storing projects and volunteers (now populated from Firebase)
+  const [events, setEvents] = useState<Project[]>([]);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
 
   const handleSignOut = async () => {
@@ -56,31 +50,31 @@ const MainApp: React.FC = () => {
     return <Login />;
   }
 
-  // Fetch events from Firebase in real-time - only for current user
+  // Fetch projects from Firebase in real-time - only for current user
   useEffect(() => {
     if (!currentUser) return;
 
-    const eventsRef = collection(db, 'Events');
-    // Query only events created by the current user
-    const eventsQuery = query(eventsRef, where('createdBy', '==', currentUser.uid));
+    const projectsRef = collection(db, 'Project');
+    // Query only projects created by the current user
+    const projectsQuery = query(projectsRef, where('creator_id', '==', currentUser.uid));
     
-    const unsubscribe = onSnapshot(eventsQuery, (snapshot) => {
-      const eventsData = snapshot.docs.map(doc => {
+    const unsubscribe = onSnapshot(projectsQuery, (snapshot) => {
+      const projectsData = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
           name: data.name || '',
-          location: data.location || '',
           description: data.description || '',
+          date: data.date || Timestamp.now(),
+          creator_id: data.creator_id || '',
+          parent_volunteers: data.parent_volunteers || 0,
+          student_volunteers: data.student_volunteers || 0,
+          volunteer_hours: data.volunteer_hours || 0,
           participated: data.participated || [],
           attendance: data.attendance || [],
-          createdBy: data.createdBy || '',
-          // Convert Firestore Timestamps to ISO strings for display
-          startTime: data.startTime?.toDate?.()?.toISOString() || data.startTime,
-          endTime: data.endTime?.toDate?.()?.toISOString() || data.endTime
-        } as Event;
+        } as Project;
       });
-      setEvents(eventsData);
+      setEvents(projectsData);
     });
 
     return () => unsubscribe();
@@ -123,8 +117,8 @@ const MainApp: React.FC = () => {
     setCurrentView('volunteerList');
   };
 
-  // Handler for editing an event
-  const handleEditEvent = (event: Event) => {
+  // Handler for editing a project
+  const handleEditEvent = (event: Project) => {
     setEditingEvent(event);
     setCurrentView('editEvent');
   };
@@ -189,8 +183,8 @@ const MainApp: React.FC = () => {
         updatedAttendance = currentAttendance.filter(id => id !== volunteerId);
       }
 
-      // Update the event in Firebase
-      await updateDoc(doc(db, 'Events', selectedEventId), {
+      // Update the project in Firebase
+      await updateDoc(doc(db, 'Project', selectedEventId), {
         attendance: updatedAttendance
       });
 
@@ -206,7 +200,7 @@ const MainApp: React.FC = () => {
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Volunteer Event Manager</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Eagle Project Manager</h1>
             
             <div className="flex items-center space-x-4">
               <button
@@ -217,7 +211,7 @@ const MainApp: React.FC = () => {
                 }`}
                 onClick={() => setCurrentView('eventList')}
               >
-                All Events
+                All Projects
               </button>
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -227,7 +221,7 @@ const MainApp: React.FC = () => {
                 }`}
                 onClick={() => setCurrentView('createEvent')}
               >
-                Create Event
+                Create Project
               </button>
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -302,7 +296,7 @@ const MainApp: React.FC = () => {
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               onClick={() => setCurrentView('eventList')}
             >
-              ← Back to Events
+              ← Back to Projects
             </button>
             <VolunteerList
               volunteers={getEventVolunteers()}

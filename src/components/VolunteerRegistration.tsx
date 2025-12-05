@@ -43,9 +43,9 @@ const VolunteerRegistration: React.FC<VolunteerRegistrationProps> = ({ eventId, 
       // Add volunteer to Volunteers collection
       const volunteerRef = await addDoc(collection(db, 'Volunteers'), volunteerData);
 
-      // Add volunteer ID to the event's participated array
-      const eventRef = doc(db, 'Events', eventId);
-      await updateDoc(eventRef, {
+      // Add volunteer ID to the project's participated array
+      const projectRef = doc(db, 'Project', eventId);
+      await updateDoc(projectRef, {
         participated: arrayUnion(volunteerRef.id)
       });
 
