@@ -18,7 +18,7 @@ type ViewKey = 'eventList' | 'createEvent' | 'editEvent' | 'volunteerList' | 'my
 const MainAppInner: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<ViewKey>('eventList');
-  const { events, eventVolunteers, userTimeRequests, selectedEventId, editingEvent, setSelectedEventId, setEditingEvent, registerForEvent, unregisterFromEvent, approveVolunteerHours, editVolunteerHours } = useProjectData({ currentUser });
+  const { events, eventVolunteers, userTimeRequests, selectedEventId, editingEvent, setSelectedEventId, setEditingEvent, registerForEvent, unregisterFromEvent, approveVolunteerHours, editVolunteerHours, deleteProject } = useProjectData({ currentUser });
   const { notifications, markNotificationRead, markAllNotificationsRead } = useNotifications(currentUser?.uid ?? null);
 
   if (!currentUser) {
@@ -132,6 +132,7 @@ const MainAppInner: React.FC = () => {
             onCreateNew={() => setCurrentView('createEvent')}
             onEditEvent={handleEditEvent}
             onViewVolunteers={handleViewVolunteers}
+            onDeleteProject={deleteProject}
           />
         )}
 

@@ -7,9 +7,10 @@ interface MyProjectsViewProps {
   onCreateNew: () => void;
   onEditEvent: (event: EagleProject) => void;
   onViewVolunteers: (eventId: string) => void;
+  onDeleteProject: (projectId: string) => Promise<void>;
 }
 
-const MyProjectsView: React.FC<MyProjectsViewProps> = ({ projects, getRegisteredCount, onCreateNew, onEditEvent, onViewVolunteers }) => {
+const MyProjectsView: React.FC<MyProjectsViewProps> = ({ projects, getRegisteredCount, onCreateNew, onEditEvent, onViewVolunteers, onDeleteProject }) => {
   if (!projects.length) {
     return (
       <div className="text-center py-12">
@@ -54,6 +55,7 @@ const MyProjectsView: React.FC<MyProjectsViewProps> = ({ projects, getRegistered
             registeredCount={getRegisteredCount(project.id)}
             onEdit={onEditEvent}
             onViewVolunteers={onViewVolunteers}
+            onDelete={onDeleteProject}
           />
         ))}
       </div>

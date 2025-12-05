@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { collection, doc, onSnapshot, query, updateDoc, where, deleteField, Timestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, updateDoc, where, deleteField, Timestamp, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { EagleProject, TimeRequestStatus, Volunteer } from '../types/projects';
 import { useUserTimeRequests } from './useUserTimeRequests';
@@ -21,6 +21,7 @@ interface UseProjectDataResult {
   unregisterFromEvent: (eventId: string) => Promise<void>;
   approveVolunteerHours: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => Promise<void>;
   editVolunteerHours: (volunteerId: string, timeRequestId: string, newHours: number) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
 }
 
 export function useProjectData({ currentUser }: UseProjectDataArgs): UseProjectDataResult {
@@ -114,6 +115,23 @@ export function useProjectData({ currentUser }: UseProjectDataArgs): UseProjectD
     setEventVolunteers((prev) => prev.map((volunteer) => volunteer.id === volunteerId ? { ...volunteer, submittedHours: newHours } : volunteer));
   }, [currentUser, events, selectedEventId]);
 
+  const deleteProject = useCallback(async (projectId: string) => {
+    if (!currentUser) {
+      alert('You must be logged in to delete a project.');
+      return;
+    }
+    const event = events.find((item) => item.id === projectId);
+    if (!event) {
+      alert('Project not found.');
+      return;
+    }
+    if (event.creator_id !== currentUser.uid) {
+      alert('Only the project creator can delete this project.');
+      return;
+    }
+    await deleteDoc(doc(db, 'Project', projectId));
+  }, [currentUser, events]);
+
   return {
     events,
     eventVolunteers,
@@ -125,7 +143,8 @@ export function useProjectData({ currentUser }: UseProjectDataArgs): UseProjectD
     registerForEvent,
     unregisterFromEvent,
     approveVolunteerHours,
-    editVolunteerHours
+    editVolunteerHours,
+    deleteProject
   };
 }
 
