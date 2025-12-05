@@ -8,7 +8,7 @@ import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, updateDoc, doc, Timestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, Timestamp, arrayUnion, arrayRemove, getDoc, where, getDocs } from 'firebase/firestore';
 import type { EagleProject } from './components/EventList';
 
 // Eagle Project interface matching the new database structure
@@ -96,24 +96,55 @@ const MainApp: React.FC = () => {
         return;
       }
 
-      // For each registered UID, get user info
+      // Fetch user info from Volunteers collection
       const volunteersData: Volunteer[] = [];
       
       for (const uid of event.registered_volunteers) {
-        // Check if this is the current user
-        if (currentUser && currentUser.uid === uid) {
+        try {
+          // Query Volunteers collection where uid field matches
+          const volunteersQuery = query(
+            collection(db, 'Volunteers'),
+            where('uid', '==', uid)
+          );
+          const querySnapshot = await getDocs(volunteersQuery);
+          
+          if (!querySnapshot.empty) {
+            // Found volunteer document
+            const volunteerDoc = querySnapshot.docs[0];
+            const volunteerData = volunteerDoc.data();
+            volunteersData.push({
+              id: uid,
+              firstName: volunteerData.firstName || 'Unknown',
+              lastName: volunteerData.lastName || '',
+              email: volunteerData.email || 'N/A',
+            });
+          } else {
+            // No volunteer document found - fallback to current user if it matches
+            if (currentUser && currentUser.uid === uid) {
+              const displayName = currentUser.displayName || 'User';
+              const nameParts = displayName.split(' ');
+              volunteersData.push({
+                id: uid,
+                firstName: nameParts[0] || 'User',
+                lastName: nameParts.slice(1).join(' ') || '',
+                email: currentUser.email || 'N/A'
+              });
+            } else {
+              // No data found
+              volunteersData.push({
+                id: uid,
+                firstName: 'Unknown',
+                lastName: 'User',
+                email: 'Not available'
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching volunteer ${uid}:`, error);
           volunteersData.push({
             id: uid,
-            firstName: currentUser.displayName?.split(' ')[0] || 'User',
-            lastName: currentUser.displayName?.split(' ').slice(1).join(' ') || '',
-            email: currentUser.email || 'N/A'
-          });
-        } else {
-          // For other users, show UID since we can't fetch their Auth data
-          volunteersData.push({
-            id: uid,
-            firstName: 'User',
-            lastName: '',
+            firstName: 'Unknown',
+            lastName: 'User',
             email: 'Not available'
           });
         }
