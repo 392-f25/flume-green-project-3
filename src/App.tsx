@@ -9,7 +9,7 @@ import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, where, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import type { EagleProject } from './components/EventList';
 
 // Eagle Project interface matching the new database structure
@@ -29,7 +29,7 @@ const MainApp: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   
   // State for managing the current view
-  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'allPastVolunteers'>('eventList');
+  const [currentView, setCurrentView] = useState<'eventList' | 'createEvent' | 'editEvent' | 'volunteerRegistration' | 'volunteerList' | 'volunteeringHistory' | 'myProjects'>('eventList');
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<Project | null>(null);
 
@@ -164,6 +164,11 @@ const MainApp: React.FC = () => {
     );
   };
 
+  // Get projects created by the current user
+  const getMyProjects = () => {
+    return events.filter(event => event.creator_id === currentUser?.uid);
+  };
+
   // Handler for updating volunteer attendance
   const handleAttendanceChange = async (volunteerId: string, isPresent: boolean) => {
     if (!selectedEventId) return;
@@ -225,13 +230,23 @@ const MainApp: React.FC = () => {
               </button>
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === 'allPastVolunteers'
+                  currentView === 'volunteeringHistory'
                     ? 'bg-primary-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
-                onClick={() => setCurrentView('allPastVolunteers')}
+                onClick={() => setCurrentView('volunteeringHistory')}
               >
-                All Past Volunteers
+                Volunteering History
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  currentView === 'myProjects'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentView('myProjects')}
+              >
+                My Projects
               </button>
 
               <div className="flex items-center space-x-3 pl-4 border-l border-gray-300">
@@ -275,7 +290,7 @@ const MainApp: React.FC = () => {
           />
         )}
 
-        {currentView === 'allPastVolunteers' && (
+        {currentView === 'volunteeringHistory' && (
           <PastVolunteers
             volunteers={getAllPastVolunteers()}
             events={events}
@@ -305,6 +320,121 @@ const MainApp: React.FC = () => {
               attendance={getSelectedEvent()?.attendance}
               onAttendanceChange={handleAttendanceChange}
             />
+          </div>
+        )}
+
+        {currentView === 'myProjects' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-bold text-gray-900">My Eagle Projects</h2>
+              <button
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                onClick={() => setCurrentView('createEvent')}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Project
+              </button>
+            </div>
+
+            {getMyProjects().length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {getMyProjects().map((event) => (
+                  <div key={event.id} className="bg-white rounded-lg shadow-sm border-2 border-green-200 hover:shadow-md transition-shadow relative">
+                    {/* My Projects badge */}
+                    <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      My Project
+                    </div>
+
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.name}</h3>
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-start space-x-2">
+                          <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Date</p>
+                            <p className="text-sm text-gray-600">
+                              {event.date instanceof Timestamp
+                                ? event.date.toDate().toLocaleString()
+                                : new Date(event.date).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {event.description && (
+                          <div className="pt-2 border-t border-gray-100">
+                            <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
+                            <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-gray-100 grid grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Parent Volunteers</p>
+                            <p className="text-sm font-semibold text-gray-900">{event.parent_volunteers}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Student Volunteers</p>
+                            <p className="text-sm font-semibold text-gray-900">{event.student_volunteers}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Volunteer Hours</p>
+                            <p className="text-sm font-semibold text-gray-900">{event.volunteer_hours}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex space-x-3">
+                          <button
+                            className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                            onClick={() => handleEditEvent(event)}
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit Project
+                          </button>
+
+                          <button
+                            className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                            onClick={() => handleViewVolunteers(event.id)}
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                            </svg>
+                            Volunteers
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No projects yet</h3>
+                <p className="mt-1 text-sm text-gray-500">Create your first Eagle project to get started.</p>
+                <button
+                  className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                  onClick={() => setCurrentView('createEvent')}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Your First Project
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
