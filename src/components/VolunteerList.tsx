@@ -4,6 +4,8 @@ interface Volunteer {
   lastName: string;
   email: string;
   registeredAt?: string;
+  submittedHours?: number;
+  timeRequestId?: string;
 }
 
 interface VolunteerListProps {
@@ -12,6 +14,7 @@ interface VolunteerListProps {
   eventId?: string;
   attendance?: string[];
   onAttendanceChange?: (volunteerId: string, isPresent: boolean) => void;
+  onHoursApproval?: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => void;
 }
 
 const VolunteerList: React.FC<VolunteerListProps> = ({
@@ -19,7 +22,8 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
   eventName,
   eventId,
   attendance = [],
-  onAttendanceChange
+  onAttendanceChange,
+  onHoursApproval
 }) => {
   return (
     <div className="space-y-6">
@@ -42,13 +46,13 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                   Total Volunteers: <span className="font-semibold">{volunteers.length}</span>
                 </p>
               </div>
-              {eventId && onAttendanceChange && (
+              {eventId && onHoursApproval && (
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="text-green-600">
-                    Present: <span className="font-semibold">{attendance.length}</span>
+                    Approved: <span className="font-semibold">{attendance.length}</span>
                   </span>
-                  <span className="text-red-600">
-                    Absent: <span className="font-semibold">{volunteers.length - attendance.length}</span>
+                  <span className="text-gray-600">
+                    Pending: <span className="font-semibold">{volunteers.length - attendance.length}</span>
                   </span>
                 </div>
               )}
@@ -75,9 +79,14 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Registered At
                     </th>
-                    {eventId && onAttendanceChange && (
+                    {eventId && onHoursApproval && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Attendance
+                        Hours Submitted
+                      </th>
+                    )}
+                    {eventId && onHoursApproval && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Approved
                       </th>
                     )}
                   </tr>
@@ -103,16 +112,30 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                             new Date(volunteer.registeredAt).toLocaleTimeString()
                           : 'N/A'}
                       </td>
-                      {eventId && onAttendanceChange && (
+                      {eventId && onHoursApproval && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {volunteer.submittedHours !== undefined ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {volunteer.submittedHours} hours
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">Not submitted</span>
+                          )}
+                        </td>
+                      )}
+                      {eventId && onHoursApproval && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <label className="inline-flex items-center">
                             <input
                               type="checkbox"
                               checked={attendance.includes(volunteer.id)}
-                              onChange={(e) => onAttendanceChange(volunteer.id, e.target.checked)}
-                              className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                              disabled={volunteer.submittedHours === undefined}
+                              onChange={(e) => onHoursApproval(volunteer.id, volunteer.timeRequestId, e.target.checked)}
+                              className="rounded border-gray-300 text-green-600 shadow-sm focus:border-green-500 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             />
-                            <span className="ml-2 text-sm">Present</span>
+                            <span className={`ml-2 text-sm ${volunteer.submittedHours === undefined ? 'text-gray-400' : ''}`}>
+                              {attendance.includes(volunteer.id) ? 'Approved' : 'Approve'}
+                            </span>
                           </label>
                         </td>
                       )}

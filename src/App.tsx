@@ -22,6 +22,8 @@ interface Volunteer {
   firstName: string;
   lastName: string;
   email: string;
+  submittedHours?: number;
+  timeRequestId?: string;
 }
 
 // Main application component for authenticated/admin views
@@ -108,6 +110,26 @@ const MainApp: React.FC = () => {
           );
           const querySnapshot = await getDocs(volunteersQuery);
           
+          // Query TimeRequests collection for this volunteer and event
+          const timeRequestsQuery = query(
+            collection(db, 'TimeRequests'),
+            where('requestor', '==', uid),
+            where('project_id', '==', selectedEventId),
+            where('approved', '==', false)
+          );
+          const timeRequestsSnapshot = await getDocs(timeRequestsQuery);
+          
+          let submittedHours: number | undefined = undefined;
+          let timeRequestId: string | undefined = undefined;
+          
+          if (!timeRequestsSnapshot.empty) {
+            // Found a time request - use the first one
+            const timeRequestDoc = timeRequestsSnapshot.docs[0];
+            const timeRequestData = timeRequestDoc.data();
+            submittedHours = timeRequestData.length_hours;
+            timeRequestId = timeRequestDoc.id;
+          }
+          
           if (!querySnapshot.empty) {
             // Found volunteer document
             const volunteerDoc = querySnapshot.docs[0];
@@ -117,6 +139,8 @@ const MainApp: React.FC = () => {
               firstName: volunteerData.firstName || 'Unknown',
               lastName: volunteerData.lastName || '',
               email: volunteerData.email || 'N/A',
+              submittedHours,
+              timeRequestId
             });
           } else {
             // No volunteer document found - fallback to current user if it matches
@@ -127,7 +151,9 @@ const MainApp: React.FC = () => {
                 id: uid,
                 firstName: nameParts[0] || 'User',
                 lastName: nameParts.slice(1).join(' ') || '',
-                email: currentUser.email || 'N/A'
+                email: currentUser.email || 'N/A',
+                submittedHours,
+                timeRequestId
               });
             } else {
               // No data found
@@ -135,7 +161,9 @@ const MainApp: React.FC = () => {
                 id: uid,
                 firstName: 'Unknown',
                 lastName: 'User',
-                email: 'Not available'
+                email: 'Not available',
+                submittedHours,
+                timeRequestId
               });
             }
           }
@@ -255,9 +283,9 @@ const MainApp: React.FC = () => {
     return events.filter(event => event.creator_id === currentUser?.uid);
   };
 
-  // Handler for updating volunteer attendance
-  const handleAttendanceChange = async (volunteerId: string, isPresent: boolean) => {
-    if (!selectedEventId) return;
+  // Handler for approving volunteer hours
+  const handleHoursApproval = async (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => {
+    if (!selectedEventId || !timeRequestId) return;
 
     try {
       const event = events.find(e => e.id === selectedEventId);
@@ -266,9 +294,14 @@ const MainApp: React.FC = () => {
       const currentAttendance = event.attendance || [];
       let updatedAttendance: string[];
 
-      if (isPresent) {
+      if (isApproved) {
         // Add volunteer to attendance if not already present
         updatedAttendance = [...new Set([...currentAttendance, volunteerId])];
+        
+        // Update the TimeRequest document to mark it as approved
+        await updateDoc(doc(db, 'TimeRequests', timeRequestId), {
+          approved: true
+        });
       } else {
         // Remove volunteer from attendance
         updatedAttendance = currentAttendance.filter(id => id !== volunteerId);
@@ -281,8 +314,8 @@ const MainApp: React.FC = () => {
 
       // The real-time listener will automatically update the local state
     } catch (error) {
-      console.error('Error updating attendance:', error);
-      alert('Failed to update attendance. Please try again.');
+      console.error('Error approving hours:', error);
+      alert('Failed to approve hours. Please try again.');
     }
   };
 
@@ -391,7 +424,7 @@ const MainApp: React.FC = () => {
               eventName={getSelectedEvent()?.name}
               eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
-              onAttendanceChange={handleAttendanceChange}
+              onHoursApproval={handleHoursApproval}
             />
           </div>
         )}
