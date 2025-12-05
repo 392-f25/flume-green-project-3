@@ -15,12 +15,16 @@ interface VolunteerListProps {
   attendance?: string[];
   onAttendanceChange?: (volunteerId: string, isPresent: boolean) => void;
   onHoursApproval?: (volunteerId: string, timeRequestId: string | undefined, isApproved: boolean) => void;
+  creatorId?: string;
+  currentUserId?: string;
 }
 
 const VolunteerList: React.FC<VolunteerListProps> = ({
   volunteers,
   eventName,
   eventId,
+  creatorId,
+  currentUserId,
   attendance = [],
   onAttendanceChange,
   onHoursApproval
@@ -84,7 +88,7 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                         Hours Submitted
                       </th>
                     )}
-                    {eventId && onHoursApproval && (
+                    {eventId && onHoursApproval && currentUserId === creatorId && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Approved
                       </th>
@@ -123,7 +127,7 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                           )}
                         </td>
                       )}
-                      {eventId && onHoursApproval && (
+                      {eventId && onHoursApproval && currentUserId === creatorId && (
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <label className="inline-flex items-center">
                             <input

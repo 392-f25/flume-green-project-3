@@ -291,6 +291,12 @@ const MainApp: React.FC = () => {
       const event = events.find(e => e.id === selectedEventId);
       if (!event) return;
 
+      // Check if current user is the creator of the event
+      if (!currentUser || event.creator_id !== currentUser.uid) {
+        alert('Only the event creator can approve hours for this event.');
+        return;
+      }
+
       const currentAttendance = event.attendance || [];
       let updatedAttendance: string[];
 
@@ -425,6 +431,8 @@ const MainApp: React.FC = () => {
               eventId={selectedEventId || ''}
               attendance={getSelectedEvent()?.attendance}
               onHoursApproval={handleHoursApproval}
+              creatorId={getSelectedEvent()?.creator_id}
+              currentUserId={currentUser?.uid}
             />
           </div>
         )}
