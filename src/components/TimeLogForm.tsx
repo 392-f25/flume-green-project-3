@@ -12,8 +12,8 @@ interface TimeLogFormProps {
 
 const TimeLogForm: React.FC<TimeLogFormProps> = ({ projectId, projectName, onSubmit, onCancel }) => {
   const { currentUser } = useAuth();
+  const [volunteeringDate] = useState(() => new Date());
   const [formData, setFormData] = useState({
-    date: '',
     length_hours: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,7 +40,7 @@ const TimeLogForm: React.FC<TimeLogFormProps> = ({ projectId, projectName, onSub
       // Create time request object for Firebase
       const timeRequest = {
         approved: false,
-        date: Timestamp.fromDate(new Date(formData.date)),
+        date: Timestamp.fromDate(volunteeringDate),
         length_hours: parseFloat(formData.length_hours),
         project_id: projectId,
         requestor: currentUser.uid
@@ -51,7 +51,6 @@ const TimeLogForm: React.FC<TimeLogFormProps> = ({ projectId, projectName, onSub
 
       // Reset form
       setFormData({
-        date: '',
         length_hours: ''
       });
 
@@ -78,18 +77,8 @@ const TimeLogForm: React.FC<TimeLogFormProps> = ({ projectId, projectName, onSub
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-            Date of Volunteering *
-          </label>
-          <input
-            type="datetime-local"
-            id="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          />
+          <p className="text-sm font-medium text-gray-700 mb-1">Date of Volunteering</p>
+          <p className="text-sm text-gray-600" data-testid="volunteering-date">{volunteeringDate.toLocaleString([], { hour: '2-digit', minute: '2-digit', year: 'numeric', month: 'short', day: 'numeric' })}</p>
         </div>
 
         <div>

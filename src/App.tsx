@@ -10,12 +10,13 @@ import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, Timestamp, arrayUnion, arrayRemove } from 'firebase/firestore';
 import type { EagleProject } from './components/EventList';
 
 // Eagle Project interface matching the new database structure
 interface Project extends EagleProject {
   attendance?: string[]; // Array of volunteer IDs marked as present
+  registered_volunteers?: string[]; // Array of volunteer IDs who registered
 }
 
 interface Volunteer {
@@ -73,6 +74,7 @@ const MainApp: React.FC = () => {
           volunteer_hours: data.volunteer_hours || 0,
           participated: data.participated || [],
           attendance: data.attendance || [],
+          registered_volunteers: data.registered_volunteers || [],
         } as Project;
       });
       setEvents(projectsData);
@@ -116,6 +118,40 @@ const MainApp: React.FC = () => {
   const handleViewVolunteers = (eventId: string) => {
     setSelectedEventId(eventId);
     setCurrentView('volunteerList');
+  };
+
+  // Handler for registering the authenticated user for an event
+  const handleRegisterForEvent = async (eventId: string) => {
+    if (!currentUser) {
+      alert('You must be logged in to register.');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'Project', eventId), {
+        registered_volunteers: arrayUnion(currentUser.uid)
+      });
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      alert('Failed to register. Please try again.');
+    }
+  };
+
+  // Handler for unregistering the authenticated user from an event
+  const handleUnregisterFromEvent = async (eventId: string) => {
+    if (!currentUser) {
+      alert('You must be logged in to unregister.');
+      return;
+    }
+
+    try {
+      await updateDoc(doc(db, 'Project', eventId), {
+        registered_volunteers: arrayRemove(currentUser.uid)
+      });
+    } catch (error) {
+      console.error('Error unregistering from event:', error);
+      alert('Failed to unregister. Please try again.');
+    }
   };
 
   // Handler for logging hours for a specific event
@@ -289,6 +325,9 @@ const MainApp: React.FC = () => {
             onViewVolunteers={handleViewVolunteers}
             onEditEvent={handleEditEvent}
             onLogHours={handleLogHours}
+            currentUserId={currentUser?.uid}
+            onRegisterEvent={handleRegisterForEvent}
+            onUnregisterEvent={handleUnregisterFromEvent}
           />
         )}
 

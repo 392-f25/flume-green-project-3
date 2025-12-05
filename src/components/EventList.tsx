@@ -11,6 +11,7 @@ export interface EagleProject {
   student_volunteers: number;
   volunteer_hours: number;
   participated?: string[];
+  registered_volunteers?: string[];
 }
 
 interface EventListProps {
@@ -19,9 +20,12 @@ interface EventListProps {
   onViewVolunteers?: (eventId: string) => void;
   onEditEvent?: (event: EagleProject) => void;
   onLogHours?: (eventId: string) => void;
+  currentUserId?: string;
+  onRegisterEvent?: (eventId: string) => void;
+  onUnregisterEvent?: (eventId: string) => void;
 }
 
-const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolunteers, onEditEvent, onLogHours }) => {
+const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolunteers, onEditEvent, onLogHours, currentUserId, onRegisterEvent, onUnregisterEvent }) => {
   const formatDateTime = (dateValue: Timestamp | string | undefined) => {
     if (!dateValue) return 'N/A';
     const date = dateValue instanceof Timestamp 
@@ -45,83 +49,110 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
 
       {events && events.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <div key={event.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="p-6">
-                <div className="mb-4">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.name}</h3>
-                </div>
+          {events.map((event) => {
+            const isRegistered = currentUserId ? (event.registered_volunteers || []).includes(currentUserId) : false;
 
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-start space-x-2">
-                    <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Date</p>
-                      <p className="text-sm text-gray-600">{formatDateTime(event.date)}</p>
-                    </div>
-                  </div>
-
-                  {event.description && (
-                    <div className="pt-2 border-t border-gray-100">
-                      <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
-                      <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
-                    </div>
+            return (
+              <div key={event.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative">
+                <div className="p-6">
+                  {isRegistered && onLogHours && (
+                    <button
+                      className="absolute top-4 right-4 inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+                      onClick={() => onLogHours(event.id)}
+                    >
+                      Log Hours
+                    </button>
                   )}
 
-                  <div className="pt-2 border-t border-gray-100 grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Parent Volunteers</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.parent_volunteers}</p>
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{event.name}</h3>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start space-x-2">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Date</p>
+                        <p className="text-sm text-gray-600">{formatDateTime(event.date)}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Student Volunteers</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.student_volunteers}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Volunteer Hours</p>
-                      <p className="text-sm font-semibold text-gray-900">{event.volunteer_hours}</p>
+
+                    {event.description && (
+                      <div className="pt-2 border-t border-gray-100">
+                        <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
+                        <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-gray-100 grid grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Parent Volunteers</p>
+                        <p className="text-sm font-semibold text-gray-900">{event.parent_volunteers}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Student Volunteers</p>
+                        <p className="text-sm font-semibold text-gray-900">{event.student_volunteers}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Volunteer Hours</p>
+                        <p className="text-sm font-semibold text-gray-900">{event.volunteer_hours}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-3">
-                  <button
-                    className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-                    onClick={() => onLogHours && onLogHours(event.id)}
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Log Hours
-                  </button>
-
-                  <div className="flex space-x-3">
+                  <div className="space-y-3">
                     <button
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                      onClick={() => copyRegistrationLink(event.id)}
+                      className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                        isRegistered
+                          ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                          : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                      }`}
+                      onClick={() => {
+                        if (isRegistered) {
+                          onUnregisterEvent && onUnregisterEvent(event.id);
+                        } else {
+                          onRegisterEvent && onRegisterEvent(event.id);
+                        }
+                      }}
                     >
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        {isRegistered ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        )}
                       </svg>
-                      Copy Link
+                      {isRegistered ? 'Unregister' : 'Register'}
                     </button>
 
-                    <button
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                      onClick={() => onViewVolunteers && onViewVolunteers(event.id)}
-                    >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                      </svg>
-                      Volunteers
-                    </button>
+                    <div className="flex space-x-3">
+                      <button
+                        className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                        onClick={() => copyRegistrationLink(event.id)}
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy Link
+                      </button>
+
+                      <button
+                        className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                        onClick={() => onViewVolunteers && onViewVolunteers(event.id)}
+                      >
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                        Volunteers
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">
