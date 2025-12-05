@@ -89,7 +89,7 @@ const VolunteerTable: React.FC<VolunteerTableProps> = ({ volunteers, roleLabel, 
       <div className={`${headerColor} border-b px-6 py-4`}>
         <div className="flex items-center justify-between">
           <h3 className={`text-lg font-semibold text-gray-900 ${titleColor}`}>{roleLabel}</h3>
-          {onNotify && (
+          {onNotify && currentUserId === creatorId && (
             <button
               type="button"
               onClick={handleNotify}
