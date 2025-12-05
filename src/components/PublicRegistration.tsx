@@ -85,10 +85,10 @@ const PublicRegistration: React.FC = () => {
       // Add volunteer to Volunteers collection
       const volunteerRef = await addDoc(collection(db, 'Volunteers'), volunteerData);
 
-      // Add volunteer ID to the project's participated array
+      // Add volunteer ID to the project's registered_volunteers array
       const projectRef = doc(db, 'Project', eventId);
       await updateDoc(projectRef, {
-        participated: arrayUnion(volunteerRef.id)
+        registered_volunteers: arrayUnion(volunteerRef.id)
       });
 
       // Show success message

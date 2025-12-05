@@ -5,7 +5,6 @@ import EventList from './components/EventList';
 import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
 import PastVolunteers from './components/PastVolunteers';
-import PublicRegistration from './components/PublicRegistration';
 import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -128,9 +127,12 @@ const MainApp: React.FC = () => {
     }
 
     try {
+      // Add the user to the project's registered_volunteers array
       await updateDoc(doc(db, 'Project', eventId), {
         registered_volunteers: arrayUnion(currentUser.uid)
       });
+      
+      console.log('Registered user', currentUser.uid, 'for event', eventId);
     } catch (error) {
       console.error('Error registering for event:', error);
       alert('Failed to register. Please try again.');
@@ -184,14 +186,41 @@ const MainApp: React.FC = () => {
 
   // Get volunteers for the selected event
   const getEventVolunteers = () => {
-    // Find the event and get volunteers from the participated array
+    // Find the event and get volunteers from the registered_volunteers array
     const event = events.find(e => e.id === selectedEventId);
-    if (!event || !event.participated) return [];
+    
+    if (!event || !event.registered_volunteers || event.registered_volunteers.length === 0) {
+      return [];
+    }
 
-    // Match volunteers by their IDs in the participated array
-    return volunteers.filter(volunteer =>
-      event.participated!.includes(volunteer.id)
-    );
+    // For each registered UID, check if they match volunteers in the Volunteers collection
+    // If not found in Volunteers collection, they're Auth users we can still display
+    const volunteersData: Volunteer[] = [];
+    
+    event.registered_volunteers.forEach(uid => {
+      // Check if volunteer exists in Volunteers collection
+      const volunteerDoc = volunteers.find(v => v.id === uid);
+      if (volunteerDoc) {
+        volunteersData.push(volunteerDoc);
+      } else {
+        // If not in Volunteers collection, create a basic entry
+        // This handles users who registered through Auth
+        volunteersData.push({
+          id: uid,
+          firstName: 'User',
+          lastName: uid.substring(0, 6), // Show partial UID for identification
+          email: 'N/A'
+        });
+      }
+    });
+    
+    return volunteersData;
+  };
+
+  // Get the count of currently registered volunteers for a project
+  const getRegisteredVolunteerCount = (projectId: string) => {
+    const event = events.find(e => e.id === projectId);
+    return event?.registered_volunteers?.length || 0;
   };
 
   // Get all past volunteers who have participated in any of the organizer's events
@@ -457,6 +486,20 @@ const MainApp: React.FC = () => {
                             <p className="text-sm font-semibold text-gray-900">{event.volunteer_hours}</p>
                           </div>
                         </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium text-gray-500">Current Signups</p>
+                            <div className="flex items-center space-x-2">
+                              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <p className="text-sm font-semibold text-blue-600">
+                                {getRegisteredVolunteerCount(event.id)} / {event.parent_volunteers + event.student_volunteers} volunteers
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-3">
@@ -518,7 +561,6 @@ const App: React.FC = () => {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<MainApp />} />
-          <Route path="/register/:eventId" element={<PublicRegistration />} />
         </Routes>
       </AuthProvider>
     </Router>

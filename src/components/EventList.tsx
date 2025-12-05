@@ -34,13 +34,6 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
     return date.toLocaleString();
   };
 
-  const copyRegistrationLink = (eventId) => {
-    // In a real app, this would be the actual URL with routing
-    const link = `${window.location.origin}/register/${eventId}`;
-    navigator.clipboard.writeText(link);
-    alert('Registration link copied to clipboard!');
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -127,27 +120,15 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
                       {isRegistered ? 'Unregister' : 'Register'}
                     </button>
 
-                    <div className="flex space-x-3">
-                      <button
-                        className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                        onClick={() => copyRegistrationLink(event.id)}
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copy Link
-                      </button>
-
-                      <button
-                        className="flex-1 inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-                        onClick={() => onViewVolunteers && onViewVolunteers(event.id)}
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                        </svg>
-                        Volunteers
-                      </button>
-                    </div>
+                    <button
+                      className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                      onClick={() => onViewVolunteers && onViewVolunteers(event.id)}
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                      </svg>
+                      View Volunteers
+                    </button>
                   </div>
                 </div>
               </div>
