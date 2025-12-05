@@ -6,7 +6,7 @@ interface Volunteer {
   registeredAt?: string;
 }
 
-import type { EagleProject } from './EventList';
+import type { EagleProject } from '../types/projects';
 
 interface PastVolunteersProps {
   volunteers: Volunteer[];
