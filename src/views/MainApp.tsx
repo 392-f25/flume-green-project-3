@@ -18,7 +18,7 @@ const MainAppInner: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   const [currentView, setCurrentView] = useState<ViewKey>('eventList');
   const { events, eventVolunteers, userTimeRequests, selectedEventId, editingEvent, setSelectedEventId, setEditingEvent, registerForEvent, unregisterFromEvent, approveVolunteerHours, editVolunteerHours } = useProjectData({ currentUser });
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useNotifications(currentUser);
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useNotifications(currentUser?.uid ?? null);
 
   if (!currentUser) {
     return <Login />;
@@ -60,10 +60,17 @@ const MainAppInner: React.FC = () => {
     return event?.registered_volunteers ? Object.keys(event.registered_volunteers).length : 0;
   };
 
+  const topNavView: 'eventList' | 'createEvent' | 'myProjects' =
+    currentView === 'createEvent'
+      ? 'createEvent'
+      : currentView === 'myProjects'
+      ? 'myProjects'
+      : 'eventList';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav
-        currentView={currentView === 'editEvent' ? 'createEvent' : currentView === 'volunteerList' ? 'eventList' : currentView}
+        currentView={topNavView}
         onChangeView={(view) => setCurrentView(view)}
         userName={currentUser.displayName || currentUser.email}
         userPhotoUrl={currentUser.photoURL}
