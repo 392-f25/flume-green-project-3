@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 interface Volunteer {
   id: string;
@@ -46,32 +46,54 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
   const [savingVolunteerId, setSavingVolunteerId] = useState<string | null>(null);
 
   // Separate volunteers by role
-  const parentVolunteersList = volunteers.filter(v => v.role === 'parent');
-  const studentVolunteersList = volunteers.filter(v => v.role === 'scout');
+  const parentVolunteersList = useMemo(() => 
+    volunteers.filter(v => v.role === 'parent'), 
+    [volunteers]
+  );
+  const studentVolunteersList = useMemo(() => 
+    volunteers.filter(v => v.role === 'scout'), 
+    [volunteers]
+  );
 
   // Counts
   const parentCount = parentVolunteersList.length;
   const studentCount = studentVolunteersList.length;
   const desiredParents = parentVolunteers || 0;
   const desiredStudents = studentVolunteers || 0;
-  const approvedHoursTotal = volunteers.reduce((total, volunteer) => {
-    if (attendance.includes(volunteer.id) && typeof volunteer.submittedHours === 'number') {
-      return total + volunteer.submittedHours;
-    }
-    return total;
-  }, 0);
-  const formattedApprovedHoursTotal = Number.isInteger(approvedHoursTotal)
-    ? approvedHoursTotal.toString()
-    : approvedHoursTotal.toFixed(2);
+  
+  const approvedHoursTotal = useMemo(() => 
+    volunteers.reduce((total, volunteer) => {
+      if (attendance.includes(volunteer.id) && typeof volunteer.submittedHours === 'number') {
+        return total + volunteer.submittedHours;
+      }
+      return total;
+    }, 0),
+    [volunteers, attendance]
+  );
+  
+  const formattedApprovedHoursTotal = useMemo(() => 
+    Number.isInteger(approvedHoursTotal)
+      ? approvedHoursTotal.toString()
+      : approvedHoursTotal.toFixed(2),
+    [approvedHoursTotal]
+  );
 
   // Calculate approved, pending, and awaiting submission counts
-  const approvedCount = attendance.length;
-  const pendingCount = volunteers.filter(v => 
-    !attendance.includes(v.id) && v.submittedHours !== undefined
-  ).length;
-  const awaitingSubmissionCount = volunteers.filter(v => 
-    !attendance.includes(v.id) && v.submittedHours === undefined
-  ).length;
+  const approvedCount = useMemo(() => attendance.length, [attendance]);
+  
+  const pendingCount = useMemo(() => 
+    volunteers.filter(v => 
+      !attendance.includes(v.id) && v.submittedHours !== undefined
+    ).length,
+    [volunteers, attendance]
+  );
+  
+  const awaitingSubmissionCount = useMemo(() => 
+    volunteers.filter(v => 
+      !attendance.includes(v.id) && v.submittedHours === undefined
+    ).length,
+    [volunteers, attendance]
+  );
 
   // Helper function to render volunteer row
   const startEditing = (volunteer: Volunteer) => {
