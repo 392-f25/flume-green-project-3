@@ -91,6 +91,7 @@ const EventList = ({
             const requestStatus = timeRequestStatuses?.[event.id];
             const showStatusTag = Boolean(isRegistered && !isOwner && requestStatus);
             const showLogHoursButton = Boolean(isRegistered && onLogHours && (!requestStatus || isOwner));
+            const isUnregisterDisabled = Boolean(isRegistered && requestStatus);
             const statusLabel = requestStatus?.status === 'approved' ? 'Hours Approved' : 'Waiting for Approval';
             const statusClasses = requestStatus?.status === 'approved'
               ? 'text-green-700 bg-green-100 border border-green-200'
@@ -171,11 +172,15 @@ const EventList = ({
 
                 <div className="p-6 pt-0 space-y-3">
                   <button
-                    className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${isRegistered
-                      ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                      : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
-                      }`}
+                    className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${isUnregisterDisabled 
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : isRegistered
+                        ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                        : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                    }`}
+                    disabled={isUnregisterDisabled}
                     onClick={() => {
+                      if (isUnregisterDisabled) return;
                       if (isRegistered) {
                         onUnregisterEvent?.(event.id);
                       } else {
