@@ -17,6 +17,8 @@ export interface EagleProject {
 export interface TimeRequestStatus {
   requestId: string;
   status: 'pending' | 'approved';
+  hours?: number;
+  submittedAt?: Timestamp | string;
 }
 
 export interface Volunteer {

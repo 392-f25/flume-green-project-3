@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { NotificationItem } from '../../types/notifications';
 
 interface TopNavProps {
-  currentView: 'eventList' | 'createEvent' | 'myProjects';
-  onChangeView: (view: 'eventList' | 'createEvent' | 'myProjects') => void;
+  currentView: 'eventList' | 'createEvent' | 'myProjects' | 'volunteeringHistory';
+  onChangeView: (view: 'eventList' | 'createEvent' | 'myProjects' | 'volunteeringHistory') => void;
   userName?: string | null;
   userPhotoUrl?: string | null;
   onSignOut: () => Promise<void>;
@@ -32,7 +32,7 @@ const TopNav: React.FC<TopNavProps> = ({
           <h1 className="text-2xl font-bold text-gray-900">Eagle Project Manager</h1>
 
           <div className="flex items-center space-x-4">
-            {(['eventList', 'createEvent', 'myProjects'] as const).map((view) => (
+            {(['eventList', 'createEvent', 'myProjects', 'volunteeringHistory'] as const).map((view) => (
               <button
                 key={view}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === view ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
@@ -41,6 +41,7 @@ const TopNav: React.FC<TopNavProps> = ({
                 {view === 'eventList' && 'All Projects'}
                 {view === 'createEvent' && 'Create Project'}
                 {view === 'myProjects' && 'My Projects'}
+                {view === 'volunteeringHistory' && 'Volunteering History'}
               </button>
             ))}
 

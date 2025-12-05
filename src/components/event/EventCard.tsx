@@ -55,18 +55,18 @@ const EventCard: React.FC<EventCardProps> = ({ event, currentUserId, onViewVolun
             My Project
           </div>
         )}
-        <div className="p-6 flex-1 flex flex-col">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-xl font-semibold text-gray-900 flex-1 break-words">{event.name}</h3>
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 flex-1 break-words">{event.name}</h3>
             {isRegistered && (
               showStatusTag ? (
-                <span className={`inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap ${statusClasses}`}>
+                <span className={`inline-flex items-center justify-center px-2.5 py-1 text-xs font-medium rounded-md whitespace-nowrap ${statusClasses}`}>
                   {statusLabel}
                 </span>
               ) : (
                 showLogHoursButton && (
                   <button
-                    className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors whitespace-nowrap"
+                    className="inline-flex items-center justify-center px-2.5 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors whitespace-nowrap"
                     onClick={() => onLogHours?.(event.id)}
                   >
                     Log Hours
@@ -76,42 +76,42 @@ const EventCard: React.FC<EventCardProps> = ({ event, currentUserId, onViewVolun
             )}
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 space-y-2">
             <div className="flex items-start space-x-2">
-              <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div>
-                <p className="text-sm font-medium text-gray-900">Date</p>
+                <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Date</p>
                 <p className="text-sm text-gray-600">{formatDateTime(event.date)}</p>
               </div>
             </div>
 
             {event.description && (
               <div className="pt-2 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-900 mb-1">Description</p>
-                <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+                <p className="text-xs font-semibold text-gray-900 uppercase tracking-wide mb-1">Description</p>
+                <p className="text-sm text-gray-600 leading-snug">{event.description}</p>
               </div>
             )}
           </div>
 
-          <div className="mt-6 grid grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-3 gap-3">
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Parent Volunteers</p>
+              <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1">Parent Volunteers</p>
               <p className="text-sm font-semibold text-gray-900">{event.parent_volunteers ?? 0}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Student Volunteers</p>
+              <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1">Student Volunteers</p>
               <p className="text-sm font-semibold text-gray-900">{event.student_volunteers ?? 0}</p>
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Volunteer Hours</p>
+              <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1">Volunteer Hours</p>
               <p className="text-sm font-semibold text-gray-900">{event.volunteer_hours ?? 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="p-6 pt-0 space-y-3">
+        <div className="p-4 pt-0 space-y-2.5">
           <button
             className={`w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${isUnregisterDisabled
               ? 'bg-gray-400 cursor-not-allowed'
@@ -129,7 +129,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, currentUserId, onViewVolun
               }
             }}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {isRegistered ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
               ) : (
@@ -143,7 +143,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, currentUserId, onViewVolun
             className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
             onClick={() => onViewVolunteers?.(event.id)}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
             View Volunteers
@@ -154,7 +154,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, currentUserId, onViewVolun
               className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
               onClick={() => onEditEvent(event)}
             >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-4M18.414 2.586a2 2 0 010 2.828L12 12l-4 1 1-4 6.414-6.586a2 2 0 012.829 0z" />
               </svg>
               Edit Project

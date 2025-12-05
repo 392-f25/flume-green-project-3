@@ -10,9 +10,10 @@ import EditProjectView from './EditProjectView';
 import VolunteerView from './VolunteerView';
 import LogHoursView from './LogHoursView';
 import MyProjectsView from './MyProjectsView';
+import VolunteeringHistoryView from './VolunteeringHistoryView';
 import Login from '../components/Login';
 
-type ViewKey = 'eventList' | 'createEvent' | 'editEvent' | 'volunteerList' | 'myProjects' | 'logHours';
+type ViewKey = 'eventList' | 'createEvent' | 'editEvent' | 'volunteerList' | 'myProjects' | 'logHours' | 'volunteeringHistory';
 
 const MainAppInner: React.FC = () => {
   const { currentUser, signOut } = useAuth();
@@ -60,12 +61,14 @@ const MainAppInner: React.FC = () => {
     return event?.registered_volunteers ? Object.keys(event.registered_volunteers).length : 0;
   };
 
-  const topNavView: 'eventList' | 'createEvent' | 'myProjects' =
+  const topNavView: 'eventList' | 'createEvent' | 'myProjects' | 'volunteeringHistory' =
     currentView === 'createEvent'
       ? 'createEvent'
       : currentView === 'myProjects'
-      ? 'myProjects'
-      : 'eventList';
+        ? 'myProjects'
+        : currentView === 'volunteeringHistory'
+          ? 'volunteeringHistory'
+          : 'eventList';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -129,6 +132,14 @@ const MainAppInner: React.FC = () => {
             onCreateNew={() => setCurrentView('createEvent')}
             onEditEvent={handleEditEvent}
             onViewVolunteers={handleViewVolunteers}
+          />
+        )}
+
+        {currentView === 'volunteeringHistory' && (
+          <VolunteeringHistoryView
+            events={events}
+            currentUserId={currentUser.uid}
+            timeRequests={userTimeRequests}
           />
         )}
       </main>

@@ -25,7 +25,9 @@ export const useUserTimeRequests = (currentUser: { uid: string } | null) => {
         if (!projectId) return;
         const status: TimeRequestStatus = {
           requestId: docSnap.id,
-          status: data.approved ? 'approved' : 'pending'
+          status: data.approved ? 'approved' : 'pending',
+          hours: typeof data.length_hours === 'number' ? data.length_hours : undefined,
+          submittedAt: data.date
         };
         const existing = statusMap[projectId];
         if (!existing || (status.status === 'approved' && existing.status !== 'approved')) {
