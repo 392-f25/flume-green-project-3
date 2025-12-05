@@ -1,4 +1,6 @@
 import { Timestamp } from 'firebase/firestore';
+import { useState } from 'react';
+import RoleSelectionModal from './RoleSelectionModal';
 
 // Eagle Project type matching the new database structure
 export interface EagleProject {
@@ -11,7 +13,7 @@ export interface EagleProject {
   student_volunteers: number;
   volunteer_hours: number;
   participated?: string[];
-  registered_volunteers?: string[];
+  registered_volunteers?: Record<string, string>;
 }
 
 interface EventListProps {
@@ -21,17 +23,38 @@ interface EventListProps {
   onEditEvent?: (event: EagleProject) => void;
   onLogHours?: (eventId: string) => void;
   currentUserId?: string;
-  onRegisterEvent?: (eventId: string) => void;
+  onRegisterEvent?: (eventId: string, role: 'scout' | 'parent') => void;
   onUnregisterEvent?: (eventId: string) => void;
 }
 
 const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolunteers, onEditEvent, onLogHours, currentUserId, onRegisterEvent, onUnregisterEvent }) => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedEventForRegistration, setSelectedEventForRegistration] = useState<EagleProject | null>(null);
+
   const formatDateTime = (dateValue: Timestamp | string | undefined) => {
     if (!dateValue) return 'N/A';
-    const date = dateValue instanceof Timestamp 
-      ? dateValue.toDate() 
+    const date = dateValue instanceof Timestamp
+      ? dateValue.toDate()
       : new Date(dateValue);
     return date.toLocaleString();
+  };
+
+  const handleRegisterClick = (event: EagleProject) => {
+    setSelectedEventForRegistration(event);
+    setModalOpen(true);
+  };
+
+  const handleRoleSelection = (role: 'scout' | 'parent') => {
+    if (selectedEventForRegistration && onRegisterEvent) {
+      onRegisterEvent(selectedEventForRegistration.id, role);
+    }
+    setModalOpen(false);
+    setSelectedEventForRegistration(null);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedEventForRegistration(null);
   };
 
   return (
@@ -43,7 +66,7 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
       {events && events.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {events.map((event) => {
-            const isRegistered = currentUserId ? (event.registered_volunteers || []).includes(currentUserId) : false;
+            const isRegistered = currentUserId ? !!(event.registered_volunteers && event.registered_volunteers[currentUserId]) : false;
 
             return (
               <div key={event.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow relative">
@@ -106,7 +129,7 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
                         if (isRegistered) {
                           onUnregisterEvent && onUnregisterEvent(event.id);
                         } else {
-                          onRegisterEvent && onRegisterEvent(event.id);
+                          handleRegisterClick(event);
                         }
                       }}
                     >
@@ -144,6 +167,13 @@ const EventList: React.FC<EventListProps> = ({ events, onSelectEvent, onViewVolu
           <p className="mt-1 text-sm text-gray-500">Get started by creating your first Eagle project.</p>
         </div>
       )}
+
+      <RoleSelectionModal
+        isOpen={modalOpen}
+        onClose={handleModalClose}
+        onSelectRole={handleRoleSelection}
+        eventName={selectedEventForRegistration?.name || ''}
+      />
     </div>
   );
 };

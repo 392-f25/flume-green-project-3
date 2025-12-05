@@ -6,6 +6,7 @@ interface Volunteer {
   registeredAt?: string;
   submittedHours?: number;
   timeRequestId?: string;
+  role?: 'scout' | 'parent';
 }
 
 interface VolunteerListProps {
@@ -81,6 +82,9 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Registered At
                     </th>
                     {eventId && onHoursApproval && (
@@ -109,6 +113,19 @@ const VolunteerList: React.FC<VolunteerListProps> = ({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {volunteer.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {volunteer.role ? (
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            volunteer.role === 'scout'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {volunteer.role === 'scout' ? 'Scout' : 'Parent'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {volunteer.registeredAt

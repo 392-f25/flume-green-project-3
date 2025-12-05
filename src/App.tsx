@@ -2,19 +2,18 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
-import VolunteerRegistration from './components/VolunteerRegistration';
 import VolunteerList from './components/VolunteerList';
 import Login from './components/Login';
 import TimeLogForm from './components/TimeLogForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, query, updateDoc, doc, Timestamp, arrayUnion, arrayRemove, getDoc, where, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, updateDoc, doc, Timestamp, where, getDocs, deleteField } from 'firebase/firestore';
 import type { EagleProject } from './components/EventList';
 
 // Eagle Project interface matching the new database structure
 interface Project extends EagleProject {
   attendance?: string[]; // Array of volunteer IDs marked as present
-  registered_volunteers?: string[]; // Array of volunteer IDs who registered
+  registered_volunteers?: Record<string, string>; // Map of volunteer IDs to roles ('scout' or 'parent') who registered
 }
 
 interface Volunteer {
@@ -24,6 +23,7 @@ interface Volunteer {
   email: string;
   submittedHours?: number;
   timeRequestId?: string;
+  role?: 'scout' | 'parent';
 }
 
 // Main application component for authenticated/admin views
@@ -93,15 +93,15 @@ const MainApp: React.FC = () => {
 
       const event = events.find(e => e.id === selectedEventId);
       
-      if (!event || !event.registered_volunteers || event.registered_volunteers.length === 0) {
+      if (!event || !event.registered_volunteers || Object.keys(event.registered_volunteers).length === 0) {
         setEventVolunteers([]);
         return;
       }
 
       // Fetch user info from Volunteers collection
       const volunteersData: Volunteer[] = [];
-      
-      for (const uid of event.registered_volunteers) {
+
+      for (const uid of Object.keys(event.registered_volunteers)) {
         try {
           // Query Volunteers collection where uid field matches
           const volunteersQuery = query(
@@ -140,7 +140,8 @@ const MainApp: React.FC = () => {
               lastName: volunteerData.lastName || '',
               email: volunteerData.email || 'N/A',
               submittedHours,
-              timeRequestId
+              timeRequestId,
+              role: event.registered_volunteers[uid] as 'scout' | 'parent'
             });
           } else {
             // No volunteer document found - fallback to current user if it matches
@@ -153,7 +154,8 @@ const MainApp: React.FC = () => {
                 lastName: nameParts.slice(1).join(' ') || '',
                 email: currentUser.email || 'N/A',
                 submittedHours,
-                timeRequestId
+                timeRequestId,
+                role: event.registered_volunteers[uid] as 'scout' | 'parent'
               });
             } else {
               // No data found
@@ -163,7 +165,8 @@ const MainApp: React.FC = () => {
                 lastName: 'User',
                 email: 'Not available',
                 submittedHours,
-                timeRequestId
+                timeRequestId,
+                role: event.registered_volunteers[uid] as 'scout' | 'parent'
               });
             }
           }
@@ -173,7 +176,8 @@ const MainApp: React.FC = () => {
             id: uid,
             firstName: 'Unknown',
             lastName: 'User',
-            email: 'Not available'
+            email: 'Not available',
+            role: event.registered_volunteers[uid] as 'scout' | 'parent'
           });
         }
       }
@@ -203,19 +207,19 @@ const MainApp: React.FC = () => {
   };
 
   // Handler for registering the authenticated user for an event
-  const handleRegisterForEvent = async (eventId: string) => {
+  const handleRegisterForEvent = async (eventId: string, role: 'scout' | 'parent') => {
     if (!currentUser) {
       alert('You must be logged in to register.');
       return;
     }
 
     try {
-      // Add the user to the project's registered_volunteers array
+      // Add the user to the project's registered_volunteers map with their role
       await updateDoc(doc(db, 'Project', eventId), {
-        registered_volunteers: arrayUnion(currentUser.uid)
+        [`registered_volunteers.${currentUser.uid}`]: role
       });
-      
-      console.log('Registered user', currentUser.uid, 'for event', eventId);
+
+      console.log('Registered user', currentUser.uid, 'as', role, 'for event', eventId);
     } catch (error) {
       console.error('Error registering for event:', error);
       alert('Failed to register. Please try again.');
@@ -231,7 +235,7 @@ const MainApp: React.FC = () => {
 
     try {
       await updateDoc(doc(db, 'Project', eventId), {
-        registered_volunteers: arrayRemove(currentUser.uid)
+        [`registered_volunteers.${currentUser.uid}`]: deleteField()
       });
     } catch (error) {
       console.error('Error unregistering from event:', error);
@@ -409,13 +413,6 @@ const MainApp: React.FC = () => {
           />
         )}
 
-        {currentView === 'volunteerRegistration' && selectedEventId && (
-          <VolunteerRegistration 
-            eventId={selectedEventId}
-            eventName={getSelectedEvent()?.name}
-            onRegister={handleVolunteerRegister}
-          />
-        )}
 
         {currentView === 'volunteerList' && (
           <div className="space-y-6">
